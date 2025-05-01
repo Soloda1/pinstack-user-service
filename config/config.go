@@ -23,11 +23,12 @@ type HTTPServer struct {
 }
 
 type Database struct {
-	Username string
-	Password string
-	Host     string
-	Port     string
-	DbName   string
+	Username       string
+	Password       string
+	Host           string
+	Port           string
+	DbName         string
+	MigrationsPath string
 }
 
 type JWT struct {
@@ -47,7 +48,7 @@ type Redis struct {
 func MustLoad() *Config {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath("./config")
 
 	viper.SetDefault("env", "dev")
 
@@ -60,6 +61,7 @@ func MustLoad() *Config {
 	viper.SetDefault("database.host", "db")
 	viper.SetDefault("database.port", "5432")
 	viper.SetDefault("database.db_name", "userservice")
+	viper.SetDefault("database.migrations_path", "migrations")
 
 	viper.SetDefault("jwt.secret", "my-secret")
 	viper.SetDefault("jwt.access_expires_at", "1m")
@@ -84,11 +86,12 @@ func MustLoad() *Config {
 			IdleTimeout: viper.GetDuration("http_server.idle_timeout"),
 		},
 		Database: Database{
-			Username: viper.GetString("database.username"),
-			Password: viper.GetString("database.password"),
-			Host:     viper.GetString("database.host"),
-			Port:     viper.GetString("database.port"),
-			DbName:   viper.GetString("database.db_name"),
+			Username:       viper.GetString("database.username"),
+			Password:       viper.GetString("database.password"),
+			Host:           viper.GetString("database.host"),
+			Port:           viper.GetString("database.port"),
+			DbName:         viper.GetString("database.db_name"),
+			MigrationsPath: viper.GetString("database.migrations_path"),
 		},
 		JWT: JWT{
 			Secret:           viper.GetString("jwt.secret"),
