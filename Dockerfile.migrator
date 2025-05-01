@@ -1,0 +1,18 @@
+FROM golang:1.24.2-alpine
+
+WORKDIR /app
+
+# Установка зависимостей для сборки
+RUN apk add --no-cache gcc musl-dev
+
+# Копирование файлов проекта
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# Сборка мигратора
+RUN go build -o migrator cmd/migrate/main.go
+
+# Запуск мигратора
+CMD ["./migrator"] 
