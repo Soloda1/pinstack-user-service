@@ -1,0 +1,25 @@
+env: "dev"
+
+http_server:
+  address: "0.0.0.0:8000"
+  timeout: "4s"
+  idle_timeout: "60s"
+
+database:
+  username: "postgres"
+  password: "admin"
+  host: "db"
+  port: "5432"
+  db_name: "userservice"
+
+jwt:
+  secret: "my-secret"
+  access_expires_at: "1m"
+  refresh_expires_at: "5m"
+
+redis:
+  host: "localhost"
+  port: "6379"
+  password: "redispassword"
+  db_index: 0
+  ttl: "5m" 
