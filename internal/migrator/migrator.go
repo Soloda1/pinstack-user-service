@@ -1,6 +1,7 @@
 package migrator
 
 import (
+	"errors"
 	"pinstack-user-service/internal/logger"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -26,7 +27,7 @@ func NewMigrator(migrationsPath, dsn string, log *logger.Logger) (*Migrator, err
 }
 
 func (m *Migrator) Up() error {
-	if err := m.m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		m.log.Error("Failed to apply migrations", "error", err)
 		return err
 	}
@@ -34,7 +35,7 @@ func (m *Migrator) Up() error {
 }
 
 func (m *Migrator) Down() error {
-	if err := m.m.Down(); err != nil && err != migrate.ErrNoChange {
+	if err := m.m.Down(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		m.log.Error("Failed to rollback migrations", "error", err)
 		return err
 	}
