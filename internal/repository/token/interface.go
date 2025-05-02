@@ -7,7 +7,7 @@ import (
 	"pinstack-user-service/internal/model"
 )
 
-type Repository interface {
+type TokenRepository interface {
 	CreateRefreshToken(ctx context.Context, token *model.RefreshToken) error
 	GetRefreshToken(ctx context.Context, token string) (*model.RefreshToken, error)
 	GetRefreshTokenByJTI(ctx context.Context, jti string) (*model.RefreshToken, error)

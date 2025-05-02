@@ -1,8 +1,8 @@
 package token
 
-type TokenRepository struct {
+type Repository struct {
 }
 
-func NewRepository() *TokenRepository {
-	return &TokenRepository{}
+func NewRepository() *Repository {
+	return &Repository{}
 }

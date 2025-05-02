@@ -13,7 +13,6 @@ type Config struct {
 	HTTPServer HTTPServer
 	Database   Database
 	JWT        JWT
-	Redis      Redis
 }
 
 type HTTPServer struct {
@@ -37,14 +36,6 @@ type JWT struct {
 	RefreshExpiresAt time.Duration
 }
 
-type Redis struct {
-	Host     string
-	Port     string
-	Password string
-	DbIndex  int
-	TTL      time.Duration
-}
-
 func MustLoad() *Config {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -66,12 +57,6 @@ func MustLoad() *Config {
 	viper.SetDefault("jwt.secret", "my-secret")
 	viper.SetDefault("jwt.access_expires_at", "1m")
 	viper.SetDefault("jwt.refresh_expires_at", "5m")
-
-	viper.SetDefault("redis.host", "localhost")
-	viper.SetDefault("redis.port", "6379")
-	viper.SetDefault("redis.password", "redispassword")
-	viper.SetDefault("redis.db_index", 0)
-	viper.SetDefault("redis.ttl", "5m")
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Printf("Error reading config file: %s", err)
@@ -97,13 +82,6 @@ func MustLoad() *Config {
 			Secret:           viper.GetString("jwt.secret"),
 			AccessExpiresAt:  viper.GetDuration("jwt.access_expires_at"),
 			RefreshExpiresAt: viper.GetDuration("jwt.refresh_expires_at"),
-		},
-		Redis: Redis{
-			Host:     viper.GetString("redis.host"),
-			Port:     viper.GetString("redis.port"),
-			Password: viper.GetString("redis.password"),
-			DbIndex:  viper.GetInt("redis.db_index"),
-			TTL:      viper.GetDuration("redis.ttl"),
 		},
 	}
 
