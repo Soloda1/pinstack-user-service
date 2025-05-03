@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"pinstack-user-service/config"
+	"pinstack-user-service/internal/delivery/grpc"
 	user_grpc "pinstack-user-service/internal/delivery/grpc/user"
 	"pinstack-user-service/internal/logger"
 	"pinstack-user-service/internal/repository"
@@ -36,8 +37,8 @@ func main() {
 	userRepo := user_repository.NewUserRepository(storage, log)
 	userService := user_service.NewUserService(userRepo, log)
 
-	grpcApi := user_grpc.NewGRPCServer(userService, log)
-	grpcServer := user_grpc.NewServer(grpcApi, cfg.GRPCServer.Address, cfg.GRPCServer.Port, log)
+	userGRPCApi := user_grpc.NewUserGRPCService(userService, log)
+	grpcServer := grpc.NewServer(userGRPCApi, cfg.GRPCServer.Address, cfg.GRPCServer.Port, log)
 
 	done := make(chan bool)
 	go func() {
