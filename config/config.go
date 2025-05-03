@@ -10,15 +10,14 @@ import (
 
 type Config struct {
 	Env        string
-	HTTPServer HTTPServer
+	GRPCServer GRPCServer
 	Database   Database
 	JWT        JWT
 }
 
-type HTTPServer struct {
-	Address     string
-	Timeout     time.Duration
-	IdleTimeout time.Duration
+type GRPCServer struct {
+	Address string
+	Port    int
 }
 
 type Database struct {
@@ -43,9 +42,8 @@ func MustLoad() *Config {
 
 	viper.SetDefault("env", "dev")
 
-	viper.SetDefault("http_server.address", "0.0.0.0:8000")
-	viper.SetDefault("http_server.timeout", "4s")
-	viper.SetDefault("http_server.idle_timeout", "60s")
+	viper.SetDefault("grpc_server.address", "0.0.0.0")
+	viper.SetDefault("grpc_server.port", 50051)
 
 	viper.SetDefault("database.username", "postgres")
 	viper.SetDefault("database.password", "admin")
@@ -65,10 +63,9 @@ func MustLoad() *Config {
 
 	config := &Config{
 		Env: viper.GetString("env"),
-		HTTPServer: HTTPServer{
-			Address:     viper.GetString("http_server.address"),
-			Timeout:     viper.GetDuration("http_server.timeout"),
-			IdleTimeout: viper.GetDuration("http_server.idle_timeout"),
+		GRPCServer: GRPCServer{
+			Address: viper.GetString("grpc_server.address"),
+			Port:    viper.GetInt("grpc_server.port"),
 		},
 		Database: Database{
 			Username:       viper.GetString("database.username"),
