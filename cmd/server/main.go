@@ -9,6 +9,7 @@ import (
 	"pinstack-user-service/internal/logger"
 	"pinstack-user-service/internal/repository"
 	user_repository "pinstack-user-service/internal/repository/user"
+	user_service "pinstack-user-service/internal/service/user"
 )
 
 func main() {
@@ -29,5 +30,6 @@ func main() {
 	}
 
 	userRepo := user_repository.NewUserRepository(storage, log)
-	_ = userRepo
+	userService := user_service.NewUserService(userRepo, log)
+	_ = userService
 }
