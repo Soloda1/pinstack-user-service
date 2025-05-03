@@ -92,6 +92,24 @@ func (s *Service) GetByUsername(ctx context.Context, username string) (*model.Us
 	return user, nil
 }
 
+func (s *Service) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	user, err := s.repo.GetByEmail(ctx, email)
+	if err != nil {
+		switch {
+		case errors.Is(err, custom_errors.ErrUserNotFound):
+			s.log.Debug("User not found", slog.String("email", email))
+			return nil, custom_errors.ErrUserNotFound
+		default:
+			s.log.Error("Failed to get user by username",
+				slog.String("error", err.Error()),
+				slog.String("email", email),
+			)
+			return nil, custom_errors.ErrDatabaseQuery
+		}
+	}
+	return user, nil
+}
+
 func (s *Service) Update(ctx context.Context, user *model.User) (*model.User, error) {
 	user, err := s.repo.Update(ctx, user)
 	if err != nil {

@@ -3,11 +3,32 @@ package user_grpc
 import (
 	"context"
 
+	"github.com/go-playground/validator/v10"
 	pb "github.com/soloda1/pinstack-proto-definitions/gen/go/pinstack-proto-definitions/user/v1"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+type UpdatePasswordRequest struct {
+	Id       int64  `validate:"required,gt=0"`
+	Password string `validate:"required,min=8"`
+}
+
+var updatePasswordValidator = validator.New()
+
 func (s *UserGRPCService) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordRequest) (*emptypb.Empty, error) {
-	// TODO: реализовать обновление пароля пользователя
-	return nil, nil
+	input := UpdatePasswordRequest{
+		Id:       req.Id,
+		Password: req.Password,
+	}
+	if err := updatePasswordValidator.Struct(input); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if err := s.userService.UpdatePassword(ctx, req.Id, req.Password); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &emptypb.Empty{}, nil
 }
