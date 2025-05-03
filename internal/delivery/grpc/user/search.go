@@ -3,10 +3,10 @@ package user_grpc
 import (
 	"context"
 
-	"github.com/go-playground/validator/v10"
 	pb "github.com/soloda1/pinstack-proto-definitions/gen/go/pinstack-proto-definitions/user/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type SearchRequest struct {
@@ -15,15 +15,13 @@ type SearchRequest struct {
 	Limit  int32  `validate:"gte=1,lte=100"`
 }
 
-var searchValidator = validator.New()
-
 func (s *UserGRPCService) SearchUsers(ctx context.Context, req *pb.SearchUsersRequest) (*pb.SearchUsersResponse, error) {
 	input := SearchRequest{
 		Query:  req.Query,
 		Offset: req.Offset,
 		Limit:  req.Limit,
 	}
-	if err := searchValidator.Struct(input); err != nil {
+	if err := validate.Struct(input); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -44,6 +42,8 @@ func (s *UserGRPCService) SearchUsers(ctx context.Context, req *pb.SearchUsersRe
 			FullName:  u.FullName,
 			Bio:       u.Bio,
 			AvatarUrl: u.AvatarURL,
+			CreatedAt: timestamppb.New(u.CreatedAt),
+			UpdatedAt: timestamppb.New(u.UpdatedAt),
 		})
 	}
 	return resp, nil

@@ -3,8 +3,6 @@ package user_grpc
 import (
 	"context"
 
-	// Не забудь добавить в go.mod: github.com/go-playground/validator/v10
-	"github.com/go-playground/validator/v10"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -12,6 +10,7 @@ import (
 	"pinstack-user-service/internal/utils"
 
 	pb "github.com/soloda1/pinstack-proto-definitions/gen/go/pinstack-proto-definitions/user/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Request struct {
@@ -22,8 +21,6 @@ type Request struct {
 	Bio       string `validate:"omitempty"`
 	AvatarURL string `validate:"omitempty,url"`
 }
-
-var validate = validator.New()
 
 func (s *UserGRPCService) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.User, error) {
 	input := Request{
@@ -60,6 +57,8 @@ func (s *UserGRPCService) CreateUser(ctx context.Context, req *pb.CreateUserRequ
 		FullName:  createdUser.FullName,
 		Bio:       createdUser.Bio,
 		AvatarUrl: createdUser.AvatarURL,
+		CreatedAt: timestamppb.New(createdUser.CreatedAt),
+		UpdatedAt: timestamppb.New(createdUser.UpdatedAt),
 	}
 
 	return resp, nil

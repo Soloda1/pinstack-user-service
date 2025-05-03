@@ -3,21 +3,19 @@ package user_grpc
 import (
 	"context"
 
-	"github.com/go-playground/validator/v10"
 	pb "github.com/soloda1/pinstack-proto-definitions/gen/go/pinstack-proto-definitions/user/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type GetByUsernameRequest struct {
 	Username string `validate:"required,min=3"`
 }
 
-var getByUsernameValidator = validator.New()
-
 func (s *UserGRPCService) GetUserByUsername(ctx context.Context, req *pb.GetUserByUsernameRequest) (*pb.User, error) {
 	input := GetByUsernameRequest{Username: req.Username}
-	if err := getByUsernameValidator.Struct(input); err != nil {
+	if err := validate.Struct(input); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -33,5 +31,7 @@ func (s *UserGRPCService) GetUserByUsername(ctx context.Context, req *pb.GetUser
 		FullName:  user.FullName,
 		Bio:       user.Bio,
 		AvatarUrl: user.AvatarURL,
+		CreatedAt: timestamppb.New(user.CreatedAt),
+		UpdatedAt: timestamppb.New(user.UpdatedAt),
 	}, nil
 }

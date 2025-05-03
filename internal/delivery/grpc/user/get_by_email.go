@@ -3,9 +3,9 @@ package user_grpc
 import (
 	"context"
 
-	"github.com/go-playground/validator/v10"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "github.com/soloda1/pinstack-proto-definitions/gen/go/pinstack-proto-definitions/user/v1"
 )
@@ -14,11 +14,9 @@ type GetByEmailRequest struct {
 	Email string `validate:"required,email"`
 }
 
-var getByEmailValidator = validator.New()
-
 func (s *UserGRPCService) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.User, error) {
 	input := GetByEmailRequest{Email: req.Email}
-	if err := getByEmailValidator.Struct(input); err != nil {
+	if err := validate.Struct(input); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -34,5 +32,7 @@ func (s *UserGRPCService) GetUserByEmail(ctx context.Context, req *pb.GetUserByE
 		FullName:  user.FullName,
 		Bio:       user.Bio,
 		AvatarUrl: user.AvatarURL,
+		CreatedAt: timestamppb.New(user.CreatedAt),
+		UpdatedAt: timestamppb.New(user.UpdatedAt),
 	}, nil
 }
