@@ -10,11 +10,12 @@ import (
 	"pinstack-user-service/internal/delivery/grpc"
 	user_grpc "pinstack-user-service/internal/delivery/grpc/user"
 	"pinstack-user-service/internal/logger"
-	"pinstack-user-service/internal/repository"
-	user_repository "pinstack-user-service/internal/repository/user"
+	user_repository "pinstack-user-service/internal/repository/user/postgres"
 	user_service "pinstack-user-service/internal/service/user"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -28,13 +29,20 @@ func main() {
 	ctx := context.Background()
 	log := logger.New(cfg.Env)
 
-	storage, err := repository.NewStorage(ctx, dsn)
+	poolConfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
-		log.Debug("Failed to create storage", slog.String("error", err.Error()))
+		log.Error("Failed to parse postgres poolConfig", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 
-	userRepo := user_repository.NewUserRepository(storage, log)
+	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
+	if err != nil {
+		log.Error("Failed to create postgres pool", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	userRepo := user_repository.NewUserRepository(pool, log)
 	userService := user_service.NewUserService(userRepo, log)
 
 	userGRPCApi := user_grpc.NewUserGRPCService(userService, log)
@@ -58,7 +66,6 @@ func main() {
 	if err := grpcServer.Shutdown(); err != nil {
 		log.Error("gRPC server shutdown error", slog.String("error", err.Error()))
 	}
-	storage.Close()
 	<-done
 	log.Info("Server exiting")
 }

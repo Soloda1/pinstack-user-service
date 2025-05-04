@@ -8,7 +8,7 @@ import (
 	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/logger"
 	"pinstack-user-service/internal/model"
-	user_repository "pinstack-user-service/internal/repository/user"
+	user_repository "pinstack-user-service/internal/repository/user/postgres"
 	"pinstack-user-service/internal/utils"
 )
 

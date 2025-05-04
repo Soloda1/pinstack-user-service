@@ -6,24 +6,23 @@ import (
 	"log/slog"
 	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/logger"
-	"pinstack-user-service/internal/repository"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgconn"
-
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"pinstack-user-service/internal/model"
 )
 
 type Repository struct {
-	storage *repository.Storage
-	log     *logger.Logger
+	pool *pgxpool.Pool
+	log  *logger.Logger
 }
 
-func NewUserRepository(storage *repository.Storage, log *logger.Logger) *Repository {
-	return &Repository{storage, log}
+func NewUserRepository(pool *pgxpool.Pool, log *logger.Logger) *Repository {
+	return &Repository{pool, log}
 }
 
 func (r *Repository) Create(ctx context.Context, user *model.User) (*model.User, error) {
@@ -46,7 +45,7 @@ func (r *Repository) Create(ctx context.Context, user *model.User) (*model.User,
 		RETURNING id, username, email, full_name, bio, avatar_url, created_at, updated_at`
 
 	var createdUser model.User
-	err := r.storage.Pool.QueryRow(ctx, query, args).Scan(
+	err := r.pool.QueryRow(ctx, query, args).Scan(
 		&createdUser.ID,
 		&createdUser.Username,
 		&createdUser.Email,
@@ -76,7 +75,7 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*model.User, error)
 	args := pgx.NamedArgs{"id": id}
 	query := `SELECT id, username, email, full_name, bio, avatar_url, created_at, updated_at
 				FROM users WHERE id = @id`
-	row := r.storage.Pool.QueryRow(ctx, query, args)
+	row := r.pool.QueryRow(ctx, query, args)
 	user := &model.User{}
 	err := row.Scan(
 		&user.ID,
@@ -103,7 +102,7 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*model
 	args := pgx.NamedArgs{"username": username}
 	query := `SELECT id, username, email, full_name, bio, avatar_url, created_at, updated_at
 				FROM users WHERE username = @username`
-	row := r.storage.Pool.QueryRow(ctx, query, args)
+	row := r.pool.QueryRow(ctx, query, args)
 	user := &model.User{}
 	err := row.Scan(
 		&user.ID,
@@ -130,7 +129,7 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (*model.User,
 	args := pgx.NamedArgs{"email": email}
 	query := `SELECT id, username, email, full_name, bio, avatar_url, created_at, updated_at
 				FROM users WHERE email = @email`
-	row := r.storage.Pool.QueryRow(ctx, query, args)
+	row := r.pool.QueryRow(ctx, query, args)
 	user := &model.User{}
 	err := row.Scan(
 		&user.ID,
@@ -184,7 +183,7 @@ func (r *Repository) Update(ctx context.Context, user *model.User) (*model.User,
 		RETURNING id, username, email, full_name, bio, avatar_url, created_at, updated_at`
 
 	var updatedUser model.User
-	err := r.storage.Pool.QueryRow(ctx, query, args).Scan(
+	err := r.pool.QueryRow(ctx, query, args).Scan(
 		&updatedUser.ID,
 		&updatedUser.Username,
 		&updatedUser.Email,
@@ -216,14 +215,12 @@ func (r *Repository) Update(ctx context.Context, user *model.User) (*model.User,
 func (r *Repository) Delete(ctx context.Context, id int64) error {
 	args := pgx.NamedArgs{"id": id}
 	query := `DELETE FROM users WHERE id = @id`
-	result, err := r.storage.Pool.Exec(ctx, query, args)
+	result, err := r.pool.Exec(ctx, query, args)
 	if err != nil {
 		r.log.Error("Error deleting user", slog.String("error", err.Error()))
 		return err
 	}
-
-	rowsAffected := result.RowsAffected()
-	if rowsAffected == 0 {
+	if result.RowsAffected() == 0 {
 		return custom_errors.ErrUserNotFound
 	}
 	return nil
@@ -245,7 +242,7 @@ func (r *Repository) Search(ctx context.Context, searchQuery string, offset, lim
 			LIMIT @limit OFFSET @offset
 			`
 
-	rows, err := r.storage.Pool.Query(ctx, query, args)
+	rows, err := r.pool.Query(ctx, query, args)
 	if err != nil {
 		r.log.Error("Error searching users", slog.String("error", err.Error()))
 		return nil, 0, err
@@ -291,7 +288,7 @@ func (r *Repository) UpdatePassword(ctx context.Context, id int64, hashedPasswor
 		RETURNING id`
 
 	var userID int64
-	err := r.storage.Pool.QueryRow(ctx, query, args).Scan(&userID)
+	err := r.pool.QueryRow(ctx, query, args).Scan(&userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return custom_errors.ErrUserNotFound
@@ -320,7 +317,7 @@ func (r *Repository) UpdateAvatar(ctx context.Context, id int64, avatarURL strin
 		RETURNING id`
 
 	var userID int64
-	err := r.storage.Pool.QueryRow(ctx, query, args).Scan(&userID)
+	err := r.pool.QueryRow(ctx, query, args).Scan(&userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return custom_errors.ErrUserNotFound
