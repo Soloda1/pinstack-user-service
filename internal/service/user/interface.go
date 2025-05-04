@@ -5,6 +5,7 @@ import (
 	"pinstack-user-service/internal/model"
 )
 
+//go:generate mockery --name UserService --dir . --output ../../../mocks --outpkg mocks --with-expecter
 type UserService interface {
 	Create(ctx context.Context, user *model.User) (*model.User, error)
 	Get(ctx context.Context, id int64) (*model.User, error)

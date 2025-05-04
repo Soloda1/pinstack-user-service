@@ -12,11 +12,11 @@ var validate = validator.New()
 
 type UserGRPCService struct {
 	pb.UnimplementedUserServiceServer
-	userService *user_service.Service
+	userService user_service.UserService
 	log         *logger.Logger
 }
 
-func NewUserGRPCService(userService *user_service.Service, log *logger.Logger) *UserGRPCService {
+func NewUserGRPCService(userService user_service.UserService, log *logger.Logger) *UserGRPCService {
 	return &UserGRPCService{
 		userService: userService,
 		log:         log,

@@ -6,7 +6,7 @@ import (
 	"pinstack-user-service/internal/model"
 )
 
-//go:generate mockery --name UserRepository --dir . --output ./mocks --outpkg mocks
+//go:generate mockery --name UserRepository --dir . --output ../../../mocks --outpkg mocks --with-expecter
 type UserRepository interface {
 	Create(ctx context.Context, user *model.User) (*model.User, error)
 	GetByID(ctx context.Context, id int64) (*model.User, error)

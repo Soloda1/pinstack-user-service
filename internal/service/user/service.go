@@ -8,16 +8,16 @@ import (
 	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/logger"
 	"pinstack-user-service/internal/model"
-	user_repository "pinstack-user-service/internal/repository/user/postgres"
+	user_repository "pinstack-user-service/internal/repository/user"
 	"pinstack-user-service/internal/utils"
 )
 
 type Service struct {
-	repo *user_repository.Repository
+	repo user_repository.UserRepository
 	log  *logger.Logger
 }
 
-func NewUserService(repo *user_repository.Repository, log *logger.Logger) *Service {
+func NewUserService(repo user_repository.UserRepository, log *logger.Logger) *Service {
 	return &Service{
 		repo: repo,
 		log:  log,

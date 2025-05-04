@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/model"
 	"pinstack-user-service/internal/utils"
 
@@ -47,7 +48,12 @@ func (s *UserGRPCService) CreateUser(ctx context.Context, req *pb.CreateUserRequ
 
 	createdUser, err := s.userService.Create(ctx, user)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		switch err {
+		case custom_errors.ErrUsernameExists, custom_errors.ErrEmailExists:
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		default:
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	resp := &pb.User{

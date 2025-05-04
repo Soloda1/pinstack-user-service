@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/model"
 
 	pb "github.com/soloda1/pinstack-proto-definitions/gen/go/pinstack-proto-definitions/user/v1"
@@ -52,7 +53,14 @@ func (s *UserGRPCService) UpdateUser(ctx context.Context, req *pb.UpdateUserRequ
 
 	updatedUser, err := s.userService.Update(ctx, user)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		switch err {
+		case custom_errors.ErrUserNotFound:
+			return nil, status.Error(codes.NotFound, err.Error())
+		case custom_errors.ErrUsernameExists, custom_errors.ErrEmailExists:
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		default:
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	return &pb.User{
