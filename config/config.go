@@ -1,18 +1,15 @@
 package config
 
 import (
+	"github.com/spf13/viper"
 	"log"
 	"os"
-	"time"
-
-	"github.com/spf13/viper"
 )
 
 type Config struct {
 	Env        string
 	GRPCServer GRPCServer
 	Database   Database
-	JWT        JWT
 }
 
 type GRPCServer struct {
@@ -29,12 +26,6 @@ type Database struct {
 	MigrationsPath string
 }
 
-type JWT struct {
-	Secret           string
-	AccessExpiresAt  time.Duration
-	RefreshExpiresAt time.Duration
-}
-
 func MustLoad() *Config {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -47,14 +38,10 @@ func MustLoad() *Config {
 
 	viper.SetDefault("database.username", "postgres")
 	viper.SetDefault("database.password", "admin")
-	viper.SetDefault("database.host", "db")
+	viper.SetDefault("database.host", "user-db")
 	viper.SetDefault("database.port", "5432")
 	viper.SetDefault("database.db_name", "userservice")
 	viper.SetDefault("database.migrations_path", "migrations")
-
-	viper.SetDefault("jwt.secret", "my-secret")
-	viper.SetDefault("jwt.access_expires_at", "1m")
-	viper.SetDefault("jwt.refresh_expires_at", "5m")
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Printf("Error reading config file: %s", err)
@@ -74,11 +61,6 @@ func MustLoad() *Config {
 			Port:           viper.GetString("database.port"),
 			DbName:         viper.GetString("database.db_name"),
 			MigrationsPath: viper.GetString("database.migrations_path"),
-		},
-		JWT: JWT{
-			Secret:           viper.GetString("jwt.secret"),
-			AccessExpiresAt:  viper.GetDuration("jwt.access_expires_at"),
-			RefreshExpiresAt: viper.GetDuration("jwt.refresh_expires_at"),
 		},
 	}
 

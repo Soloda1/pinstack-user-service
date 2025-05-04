@@ -12,7 +12,3 @@ database:
   db_name: "userservice"
   migrations_path: "./migrations"
 
-jwt:
-  secret: "my-secret"
-  access_expires_at: "1m"
-  refresh_expires_at: "5m"

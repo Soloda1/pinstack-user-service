@@ -2,14 +2,6 @@ package custom_errors
 
 import "errors"
 
-// Общие ошибки аутентификации
-var (
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrTokenExpired       = errors.New("token expired")
-	ErrTokenInvalid       = errors.New("invalid token")
-	ErrUnauthorized       = errors.New("unauthorized")
-)
-
 // Ошибки пользователя
 var (
 	ErrUserNotFound      = errors.New("user not found")
