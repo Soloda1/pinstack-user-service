@@ -2,14 +2,14 @@ package user_service
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5"
-	"github.com/pkg/errors"
 	"log/slog"
 	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/logger"
 	"pinstack-user-service/internal/model"
 	user_repository "pinstack-user-service/internal/repository/user"
-	"pinstack-user-service/internal/utils"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/pkg/errors"
 )
 
 type Service struct {
@@ -25,14 +25,6 @@ func NewUserService(repo user_repository.UserRepository, log *logger.Logger) *Se
 }
 
 func (s *Service) Create(ctx context.Context, user *model.User) (*model.User, error) {
-	hashedPassword, err := utils.HashPassword(user.Password)
-	if err != nil {
-		s.log.Error("Failed to hash password",
-			slog.String("error", err.Error()))
-		return nil, err
-	}
-	user.Password = hashedPassword
-
 	createdUser, err := s.repo.Create(ctx, user)
 	if err != nil {
 		switch {
@@ -71,6 +63,7 @@ func (s *Service) Get(ctx context.Context, id int64) (*model.User, error) {
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
+	user.Password = ""
 	return user, nil
 }
 
@@ -89,6 +82,7 @@ func (s *Service) GetByUsername(ctx context.Context, username string) (*model.Us
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
+	user.Password = ""
 	return user, nil
 }
 
@@ -107,6 +101,7 @@ func (s *Service) GetByEmail(ctx context.Context, email string) (*model.User, er
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
+	user.Password = ""
 	return user, nil
 }
 
@@ -169,13 +164,27 @@ func (s *Service) Search(ctx context.Context, query string, page, limit int) ([]
 	return users, count, nil
 }
 
-func (s *Service) UpdatePassword(ctx context.Context, id int64, password string) error {
-	hashedPassword, err := utils.HashPassword(password)
+func (s *Service) UpdatePassword(ctx context.Context, id int64, oldPassword, newPassword string) error {
+	user, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		s.log.Debug("Error hashing password", slog.String("error", err.Error()))
-		return err
+		switch {
+		case errors.Is(err, custom_errors.ErrUserNotFound):
+			s.log.Debug("User not found", slog.Int64("id", id))
+			return custom_errors.ErrUserNotFound
+		default:
+			s.log.Error("Failed to get user for password update",
+				slog.String("error", err.Error()),
+				slog.Int64("id", id))
+			return custom_errors.ErrDatabaseQuery
+		}
 	}
-	err = s.repo.UpdatePassword(ctx, id, hashedPassword)
+
+	if user.Password != oldPassword {
+		s.log.Debug("Invalid old password", slog.Int64("id", id))
+		return custom_errors.ErrInvalidPassword
+	}
+
+	err = s.repo.UpdatePassword(ctx, id, newPassword)
 	if err != nil {
 		switch {
 		case errors.Is(err, custom_errors.ErrUserNotFound):
@@ -184,8 +193,7 @@ func (s *Service) UpdatePassword(ctx context.Context, id int64, password string)
 		default:
 			s.log.Error("Failed to update password user",
 				slog.String("error", err.Error()),
-				slog.Int64("id", id),
-			)
+				slog.Int64("id", id))
 			return custom_errors.ErrDatabaseQuery
 		}
 	}

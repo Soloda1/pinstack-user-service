@@ -73,13 +73,14 @@ func (r *Repository) Create(ctx context.Context, user *model.User) (*model.User,
 
 func (r *Repository) GetByID(ctx context.Context, id int64) (*model.User, error) {
 	args := pgx.NamedArgs{"id": id}
-	query := `SELECT id, username, email, full_name, bio, avatar_url, created_at, updated_at
+	query := `SELECT id, username, password, email, full_name, bio, avatar_url, created_at, updated_at
 				FROM users WHERE id = @id`
 	row := r.pool.QueryRow(ctx, query, args)
 	user := &model.User{}
 	err := row.Scan(
 		&user.ID,
 		&user.Username,
+		&user.Password,
 		&user.Email,
 		&user.FullName,
 		&user.Bio,
@@ -100,13 +101,14 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*model.User, error)
 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (*model.User, error) {
 	args := pgx.NamedArgs{"username": username}
-	query := `SELECT id, username, email, full_name, bio, avatar_url, created_at, updated_at
+	query := `SELECT id, username, password, email, full_name, bio, avatar_url, created_at, updated_at
 				FROM users WHERE username = @username`
 	row := r.pool.QueryRow(ctx, query, args)
 	user := &model.User{}
 	err := row.Scan(
 		&user.ID,
 		&user.Username,
+		&user.Password,
 		&user.Email,
 		&user.FullName,
 		&user.Bio,
@@ -127,13 +129,14 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*model
 
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	args := pgx.NamedArgs{"email": email}
-	query := `SELECT id, username, email, full_name, bio, avatar_url, created_at, updated_at
+	query := `SELECT id, username, password, email, full_name, bio, avatar_url, created_at, updated_at
 				FROM users WHERE email = @email`
 	row := r.pool.QueryRow(ctx, query, args)
 	user := &model.User{}
 	err := row.Scan(
 		&user.ID,
 		&user.Username,
+		&user.Password,
 		&user.Email,
 		&user.FullName,
 		&user.Bio,
@@ -272,11 +275,11 @@ func (r *Repository) Search(ctx context.Context, searchQuery string, offset, lim
 	return users, len(users), nil
 }
 
-func (r *Repository) UpdatePassword(ctx context.Context, id int64, hashedPassword string) error {
+func (r *Repository) UpdatePassword(ctx context.Context, id int64, newPassword string) error {
 	updatedAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
 	args := pgx.NamedArgs{
 		"id":         id,
-		"password":   hashedPassword,
+		"password":   newPassword,
 		"updated_at": updatedAt,
 	}
 

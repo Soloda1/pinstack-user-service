@@ -512,40 +512,87 @@ func TestUserService_UpdatePassword(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
-		name      string
-		id        int64
-		password  string
-		mockSetup func()
-		wantErr   error
+		name          string
+		id            int64
+		oldPassword   string
+		newPassword   string
+		mockSetup     func()
+		expectedError error
 	}{
 		{
-			name:     "successful update",
-			id:       1,
-			password: "newpassword123",
+			name:        "successful password update",
+			id:          1,
+			oldPassword: "oldpass",
+			newPassword: "newpass",
 			mockSetup: func() {
-				mockRepo.On("UpdatePassword", mock.Anything, int64(1), mock.AnythingOfType("string")).Return(nil).Once()
+				mockRepo.On("GetByID", mock.Anything, int64(1)).Return(
+					&model.User{
+						ID:       1,
+						Password: "oldpass",
+					}, nil).Once()
+				mockRepo.On("UpdatePassword", mock.Anything, int64(1), "newpass").Return(nil).Once()
 			},
-			wantErr: nil,
+			expectedError: nil,
 		},
 		{
-			name:     "user not found",
-			id:       999,
-			password: "newpassword123",
+			name:        "user not found",
+			id:          999,
+			oldPassword: "oldpass",
+			newPassword: "newpass",
 			mockSetup: func() {
-				mockRepo.On("UpdatePassword", mock.Anything, int64(999), mock.AnythingOfType("string")).Return(custom_errors.ErrUserNotFound).Once()
+				mockRepo.On("GetByID", mock.Anything, int64(999)).Return(nil, custom_errors.ErrUserNotFound).Once()
 			},
-			wantErr: custom_errors.ErrUserNotFound,
+			expectedError: custom_errors.ErrUserNotFound,
+		},
+		{
+			name:        "invalid old password",
+			id:          1,
+			oldPassword: "wrongpass",
+			newPassword: "newpass",
+			mockSetup: func() {
+				mockRepo.On("GetByID", mock.Anything, int64(1)).Return(
+					&model.User{
+						ID:       1,
+						Password: "oldpass",
+					}, nil).Once()
+			},
+			expectedError: custom_errors.ErrInvalidPassword,
+		},
+		{
+			name:        "database error on get user",
+			id:          1,
+			oldPassword: "oldpass",
+			newPassword: "newpass",
+			mockSetup: func() {
+				mockRepo.On("GetByID", mock.Anything, int64(1)).Return(nil, assert.AnError).Once()
+			},
+			expectedError: custom_errors.ErrDatabaseQuery,
+		},
+		{
+			name:        "database error on update password",
+			id:          1,
+			oldPassword: "oldpass",
+			newPassword: "newpass",
+			mockSetup: func() {
+				mockRepo.On("GetByID", mock.Anything, int64(1)).Return(
+					&model.User{
+						ID:       1,
+						Password: "oldpass",
+					}, nil).Once()
+				mockRepo.On("UpdatePassword", mock.Anything, int64(1), "newpass").Return(assert.AnError).Once()
+			},
+			expectedError: custom_errors.ErrDatabaseQuery,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockSetup()
-			err := service.UpdatePassword(context.Background(), tt.id, tt.password)
+			err := service.UpdatePassword(context.Background(), tt.id, tt.oldPassword, tt.newPassword)
 
-			if tt.wantErr != nil {
+			if tt.expectedError != nil {
 				assert.Error(t, err)
-				assert.Equal(t, tt.wantErr, err)
+				assert.Equal(t, tt.expectedError, err)
 			} else {
 				assert.NoError(t, err)
 			}

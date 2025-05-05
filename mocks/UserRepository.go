@@ -480,9 +480,9 @@ func (_c *UserRepository_UpdateAvatar_Call) RunAndReturn(run func(context.Contex
 	return _c
 }
 
-// UpdatePassword provides a mock function with given fields: ctx, id, password
-func (_m *UserRepository) UpdatePassword(ctx context.Context, id int64, password string) error {
-	ret := _m.Called(ctx, id, password)
+// UpdatePassword provides a mock function with given fields: ctx, id, newPassword
+func (_m *UserRepository) UpdatePassword(ctx context.Context, id int64, newPassword string) error {
+	ret := _m.Called(ctx, id, newPassword)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdatePassword")
@@ -490,7 +490,7 @@ func (_m *UserRepository) UpdatePassword(ctx context.Context, id int64, password
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, int64, string) error); ok {
-		r0 = rf(ctx, id, password)
+		r0 = rf(ctx, id, newPassword)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -506,12 +506,12 @@ type UserRepository_UpdatePassword_Call struct {
 // UpdatePassword is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-//   - password string
-func (_e *UserRepository_Expecter) UpdatePassword(ctx interface{}, id interface{}, password interface{}) *UserRepository_UpdatePassword_Call {
-	return &UserRepository_UpdatePassword_Call{Call: _e.mock.On("UpdatePassword", ctx, id, password)}
+//   - newPassword string
+func (_e *UserRepository_Expecter) UpdatePassword(ctx interface{}, id interface{}, newPassword interface{}) *UserRepository_UpdatePassword_Call {
+	return &UserRepository_UpdatePassword_Call{Call: _e.mock.On("UpdatePassword", ctx, id, newPassword)}
 }
 
-func (_c *UserRepository_UpdatePassword_Call) Run(run func(ctx context.Context, id int64, password string)) *UserRepository_UpdatePassword_Call {
+func (_c *UserRepository_UpdatePassword_Call) Run(run func(ctx context.Context, id int64, newPassword string)) *UserRepository_UpdatePassword_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(int64), args[2].(string))
 	})

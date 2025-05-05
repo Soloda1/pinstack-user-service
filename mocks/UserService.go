@@ -480,17 +480,17 @@ func (_c *UserService_UpdateAvatar_Call) RunAndReturn(run func(context.Context, 
 	return _c
 }
 
-// UpdatePassword provides a mock function with given fields: ctx, id, password
-func (_m *UserService) UpdatePassword(ctx context.Context, id int64, password string) error {
-	ret := _m.Called(ctx, id, password)
+// UpdatePassword provides a mock function with given fields: ctx, id, oldPassword, newPassword
+func (_m *UserService) UpdatePassword(ctx context.Context, id int64, oldPassword string, newPassword string) error {
+	ret := _m.Called(ctx, id, oldPassword, newPassword)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdatePassword")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64, string) error); ok {
-		r0 = rf(ctx, id, password)
+	if rf, ok := ret.Get(0).(func(context.Context, int64, string, string) error); ok {
+		r0 = rf(ctx, id, oldPassword, newPassword)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -506,14 +506,15 @@ type UserService_UpdatePassword_Call struct {
 // UpdatePassword is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id int64
-//   - password string
-func (_e *UserService_Expecter) UpdatePassword(ctx interface{}, id interface{}, password interface{}) *UserService_UpdatePassword_Call {
-	return &UserService_UpdatePassword_Call{Call: _e.mock.On("UpdatePassword", ctx, id, password)}
+//   - oldPassword string
+//   - newPassword string
+func (_e *UserService_Expecter) UpdatePassword(ctx interface{}, id interface{}, oldPassword interface{}, newPassword interface{}) *UserService_UpdatePassword_Call {
+	return &UserService_UpdatePassword_Call{Call: _e.mock.On("UpdatePassword", ctx, id, oldPassword, newPassword)}
 }
 
-func (_c *UserService_UpdatePassword_Call) Run(run func(ctx context.Context, id int64, password string)) *UserService_UpdatePassword_Call {
+func (_c *UserService_UpdatePassword_Call) Run(run func(ctx context.Context, id int64, oldPassword string, newPassword string)) *UserService_UpdatePassword_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(int64), args[2].(string))
+		run(args[0].(context.Context), args[1].(int64), args[2].(string), args[3].(string))
 	})
 	return _c
 }
@@ -523,7 +524,7 @@ func (_c *UserService_UpdatePassword_Call) Return(_a0 error) *UserService_Update
 	return _c
 }
 
-func (_c *UserService_UpdatePassword_Call) RunAndReturn(run func(context.Context, int64, string) error) *UserService_UpdatePassword_Call {
+func (_c *UserService_UpdatePassword_Call) RunAndReturn(run func(context.Context, int64, string, string) error) *UserService_UpdatePassword_Call {
 	_c.Call.Return(run)
 	return _c
 }

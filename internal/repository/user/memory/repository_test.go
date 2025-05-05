@@ -26,7 +26,7 @@ func TestRepository_Create(t *testing.T) {
 	user := &model.User{
 		Username:  "testuser",
 		Email:     "test@example.com",
-		Password:  "hashedpassword",
+		Password:  "password",
 		FullName:  stringPtr("Test User"),
 		Bio:       stringPtr("Test Bio"),
 		AvatarURL: stringPtr("https://example.com/avatar.jpg"),
@@ -90,7 +90,7 @@ func TestRepository_GetByID(t *testing.T) {
 	user := &model.User{
 		Username:  "testuser",
 		Email:     "test@example.com",
-		Password:  "hashedpassword",
+		Password:  "password",
 		FullName:  stringPtr("Test User"),
 		Bio:       stringPtr("Test Bio"),
 		AvatarURL: stringPtr("https://example.com/avatar.jpg"),
@@ -149,14 +149,14 @@ func TestRepository_Search(t *testing.T) {
 		{
 			Username: "john_doe",
 			Email:    "john@example.com",
-			Password: "hashedpassword",
+			Password: "password",
 			FullName: stringPtr("John Doe"),
 			Bio:      stringPtr("Software Developer"),
 		},
 		{
 			Username: "jane_smith",
 			Email:    "jane@example.com",
-			Password: "hashedpassword",
+			Password: "password",
 			FullName: stringPtr("Jane Smith"),
 			Bio:      stringPtr("Designer"),
 		},

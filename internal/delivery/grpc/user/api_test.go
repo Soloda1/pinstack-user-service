@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -42,7 +43,8 @@ func TestUserGRPCService_CreateUser(t *testing.T) {
 			req: &pb.CreateUserRequest{
 				Username: "testuser",
 				Email:    "test@example.com",
-				Password: "password123",
+				Password: "password",
+				FullName: stringPtr("Test User"),
 			},
 			mock: func() {
 				mockService.EXPECT().Create(
@@ -50,19 +52,22 @@ func TestUserGRPCService_CreateUser(t *testing.T) {
 					&model.User{
 						Username: "testuser",
 						Email:    "test@example.com",
-						Password: "password123",
+						Password: "password",
+						FullName: stringPtr("Test User"),
 					},
 				).Return(&model.User{
 					ID:       1,
 					Username: "testuser",
 					Email:    "test@example.com",
-					Password: "hashed_password",
+					Password: "password",
+					FullName: stringPtr("Test User"),
 				}, nil)
 			},
 			want: &pb.User{
 				Id:       1,
 				Username: "testuser",
 				Email:    "test@example.com",
+				FullName: stringPtr("Test User"),
 			},
 			wantErr: nil,
 		},
@@ -71,7 +76,8 @@ func TestUserGRPCService_CreateUser(t *testing.T) {
 			req: &pb.CreateUserRequest{
 				Username: "testuser",
 				Email:    "another@example.com",
-				Password: "password123",
+				Password: "password",
+				FullName: stringPtr("Test User"),
 			},
 			mock: func() {
 				mockService.EXPECT().Create(
@@ -79,7 +85,8 @@ func TestUserGRPCService_CreateUser(t *testing.T) {
 					&model.User{
 						Username: "testuser",
 						Email:    "another@example.com",
-						Password: "password123",
+						Password: "password",
+						FullName: stringPtr("Test User"),
 					},
 				).Return(nil, custom_errors.ErrUsernameExists)
 			},
@@ -91,7 +98,8 @@ func TestUserGRPCService_CreateUser(t *testing.T) {
 			req: &pb.CreateUserRequest{
 				Username: "anotheruser",
 				Email:    "test@example.com",
-				Password: "password123",
+				Password: "password",
+				FullName: stringPtr("Test User"),
 			},
 			mock: func() {
 				mockService.EXPECT().Create(
@@ -99,7 +107,8 @@ func TestUserGRPCService_CreateUser(t *testing.T) {
 					&model.User{
 						Username: "anotheruser",
 						Email:    "test@example.com",
-						Password: "password123",
+						Password: "password",
+						FullName: stringPtr("Test User"),
 					},
 				).Return(nil, custom_errors.ErrEmailExists)
 			},
@@ -122,6 +131,7 @@ func TestUserGRPCService_CreateUser(t *testing.T) {
 				assert.NotNil(t, got)
 				assert.Equal(t, tt.want.Username, got.Username)
 				assert.Equal(t, tt.want.Email, got.Email)
+				assert.Equal(t, tt.want.FullName, got.FullName)
 				assert.NotZero(t, got.Id)
 			}
 		})
@@ -152,13 +162,15 @@ func TestUserGRPCService_GetUser(t *testing.T) {
 					ID:       1,
 					Username: "testuser",
 					Email:    "test@example.com",
-					Password: "hashed_password",
+					Password: "password",
+					FullName: stringPtr("Test User"),
 				}, nil)
 			},
 			want: &pb.User{
 				Id:       1,
 				Username: "testuser",
 				Email:    "test@example.com",
+				FullName: stringPtr("Test User"),
 			},
 			wantErr: nil,
 		},
@@ -193,6 +205,7 @@ func TestUserGRPCService_GetUser(t *testing.T) {
 				assert.Equal(t, tt.want.Id, got.Id)
 				assert.Equal(t, tt.want.Username, got.Username)
 				assert.Equal(t, tt.want.Email, got.Email)
+				assert.Equal(t, tt.want.FullName, got.FullName)
 			}
 		})
 	}
@@ -222,13 +235,15 @@ func TestUserGRPCService_GetUserByUsername(t *testing.T) {
 					ID:       1,
 					Username: "testuser",
 					Email:    "test@example.com",
-					Password: "hashed_password",
+					Password: "password",
+					FullName: stringPtr("Test User"),
 				}, nil)
 			},
 			want: &pb.User{
 				Id:       1,
 				Username: "testuser",
 				Email:    "test@example.com",
+				FullName: stringPtr("Test User"),
 			},
 			wantErr: nil,
 		},
@@ -263,6 +278,7 @@ func TestUserGRPCService_GetUserByUsername(t *testing.T) {
 				assert.Equal(t, tt.want.Id, got.Id)
 				assert.Equal(t, tt.want.Username, got.Username)
 				assert.Equal(t, tt.want.Email, got.Email)
+				assert.Equal(t, tt.want.FullName, got.FullName)
 			}
 		})
 	}
@@ -292,13 +308,15 @@ func TestUserGRPCService_GetUserByEmail(t *testing.T) {
 					ID:       1,
 					Username: "testuser",
 					Email:    "test@example.com",
-					Password: "hashed_password",
+					Password: "password",
+					FullName: stringPtr("Test User"),
 				}, nil)
 			},
 			want: &pb.User{
 				Id:       1,
 				Username: "testuser",
 				Email:    "test@example.com",
+				FullName: stringPtr("Test User"),
 			},
 			wantErr: nil,
 		},
@@ -333,6 +351,7 @@ func TestUserGRPCService_GetUserByEmail(t *testing.T) {
 				assert.Equal(t, tt.want.Id, got.Id)
 				assert.Equal(t, tt.want.Username, got.Username)
 				assert.Equal(t, tt.want.Email, got.Email)
+				assert.Equal(t, tt.want.FullName, got.FullName)
 			}
 		})
 	}
@@ -355,6 +374,7 @@ func TestUserGRPCService_UpdateUser(t *testing.T) {
 				Id:       1,
 				Username: strPtr("updateduser"),
 				Email:    strPtr("updated@example.com"),
+				FullName: strPtr("Updated User"),
 			},
 			mock: func() {
 				mockService.EXPECT().Update(
@@ -363,17 +383,20 @@ func TestUserGRPCService_UpdateUser(t *testing.T) {
 						ID:       1,
 						Username: "updateduser",
 						Email:    "updated@example.com",
+						FullName: stringPtr("Updated User"),
 					},
 				).Return(&model.User{
 					ID:       1,
 					Username: "updateduser",
 					Email:    "updated@example.com",
+					FullName: stringPtr("Updated User"),
 				}, nil)
 			},
 			want: &pb.User{
 				Id:       1,
 				Username: "updateduser",
 				Email:    "updated@example.com",
+				FullName: stringPtr("Updated User"),
 			},
 			wantErr: nil,
 		},
@@ -383,6 +406,7 @@ func TestUserGRPCService_UpdateUser(t *testing.T) {
 				Id:       999,
 				Username: strPtr("nonexistent"),
 				Email:    strPtr("nonexistent@example.com"),
+				FullName: strPtr("Nonexistent User"),
 			},
 			mock: func() {
 				mockService.EXPECT().Update(
@@ -391,6 +415,7 @@ func TestUserGRPCService_UpdateUser(t *testing.T) {
 						ID:       999,
 						Username: "nonexistent",
 						Email:    "nonexistent@example.com",
+						FullName: stringPtr("Nonexistent User"),
 					},
 				).Return(nil, custom_errors.ErrUserNotFound)
 			},
@@ -414,6 +439,7 @@ func TestUserGRPCService_UpdateUser(t *testing.T) {
 				assert.Equal(t, tt.want.Id, got.Id)
 				assert.Equal(t, tt.want.Username, got.Username)
 				assert.Equal(t, tt.want.Email, got.Email)
+				assert.Equal(t, tt.want.FullName, got.FullName)
 			}
 		})
 	}
@@ -508,6 +534,7 @@ func TestUserGRPCService_SearchUsers(t *testing.T) {
 						Email:     "test1@example.com",
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
+						FullName:  stringPtr("Test User 1"),
 					},
 					{
 						ID:        2,
@@ -515,6 +542,7 @@ func TestUserGRPCService_SearchUsers(t *testing.T) {
 						Email:     "test2@example.com",
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
+						FullName:  stringPtr("Test User 2"),
 					},
 				}, 2, nil)
 			},
@@ -524,11 +552,13 @@ func TestUserGRPCService_SearchUsers(t *testing.T) {
 						Id:       1,
 						Username: "testuser1",
 						Email:    "test1@example.com",
+						FullName: stringPtr("Test User 1"),
 					},
 					{
 						Id:       2,
 						Username: "testuser2",
 						Email:    "test2@example.com",
+						FullName: stringPtr("Test User 2"),
 					},
 				},
 				Total: 2,
@@ -600,6 +630,7 @@ func TestUserGRPCService_SearchUsers(t *testing.T) {
 					assert.Equal(t, wantUser.Id, got.Users[i].Id)
 					assert.Equal(t, wantUser.Username, got.Users[i].Username)
 					assert.Equal(t, wantUser.Email, got.Users[i].Email)
+					assert.Equal(t, wantUser.FullName, got.Users[i].FullName)
 				}
 			}
 		})
@@ -611,74 +642,96 @@ func TestUserGRPCService_UpdatePassword(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
-		name    string
-		req     *pb.UpdatePasswordRequest
-		mock    func()
-		want    *emptypb.Empty
-		wantErr error
+		name          string
+		req           *pb.UpdatePasswordRequest
+		mockSetup     func(mockService *mocks.UserService)
+		expectedError error
 	}{
 		{
-			name: "successful update",
+			name: "successful password update",
 			req: &pb.UpdatePasswordRequest{
-				Id:       1,
-				Password: "newpassword",
+				Id:          1,
+				OldPassword: "oldpass",
+				NewPassword: "newpass",
 			},
-			mock: func() {
-				mockService.EXPECT().UpdatePassword(
-					context.Background(),
-					int64(1),
-					"newpassword",
-				).Return(nil)
+			mockSetup: func(mockService *mocks.UserService) {
+				mockService.EXPECT().
+					UpdatePassword(mock.Anything, int64(1), "oldpass", "newpass").
+					Return(nil)
 			},
-			want:    &emptypb.Empty{},
-			wantErr: nil,
+			expectedError: nil,
 		},
 		{
 			name: "user not found",
 			req: &pb.UpdatePasswordRequest{
-				Id:       999,
-				Password: "newpassword",
+				Id:          999,
+				OldPassword: "oldpass",
+				NewPassword: "newpass",
 			},
-			mock: func() {
-				mockService.EXPECT().UpdatePassword(
-					context.Background(),
-					int64(999),
-					"newpassword",
-				).Return(custom_errors.ErrUserNotFound)
+			mockSetup: func(mockService *mocks.UserService) {
+				mockService.EXPECT().
+					UpdatePassword(mock.Anything, int64(999), "oldpass", "newpass").
+					Return(custom_errors.ErrUserNotFound)
 			},
-			want:    nil,
-			wantErr: status.Error(codes.NotFound, custom_errors.ErrUserNotFound.Error()),
+			expectedError: status.Error(codes.NotFound, custom_errors.ErrUserNotFound.Error()),
 		},
 		{
-			name: "invalid password",
+			name: "invalid old password",
 			req: &pb.UpdatePasswordRequest{
-				Id:       1,
-				Password: "short",
+				Id:          1,
+				OldPassword: "wrongpass",
+				NewPassword: "newpass",
 			},
-			mock:    func() {},
-			want:    nil,
-			wantErr: status.Error(codes.InvalidArgument, "validation error"),
+			mockSetup: func(mockService *mocks.UserService) {
+				mockService.EXPECT().
+					UpdatePassword(mock.Anything, int64(1), "wrongpass", "newpass").
+					Return(custom_errors.ErrInvalidPassword)
+			},
+			expectedError: status.Error(codes.InvalidArgument, custom_errors.ErrInvalidPassword.Error()),
+		},
+		{
+			name: "invalid request - missing old password",
+			req: &pb.UpdatePasswordRequest{
+				Id:          1,
+				NewPassword: "newpass",
+			},
+			mockSetup:     func(mockService *mocks.UserService) {},
+			expectedError: status.Error(codes.InvalidArgument, "Key: 'UpdatePasswordRequest.OldPassword' Error:Field validation for 'OldPassword' failed on the 'required' tag"),
+		},
+		{
+			name: "invalid request - missing new password",
+			req: &pb.UpdatePasswordRequest{
+				Id:          1,
+				OldPassword: "oldpass",
+			},
+			mockSetup:     func(mockService *mocks.UserService) {},
+			expectedError: status.Error(codes.InvalidArgument, "Key: 'UpdatePasswordRequest.NewPassword' Error:Field validation for 'NewPassword' failed on the 'required' tag"),
+		},
+		{
+			name: "invalid request - invalid id",
+			req: &pb.UpdatePasswordRequest{
+				Id:          0,
+				OldPassword: "oldpass",
+				NewPassword: "newpass",
+			},
+			mockSetup:     func(mockService *mocks.UserService) {},
+			expectedError: status.Error(codes.InvalidArgument, "Key: 'UpdatePasswordRequest.Id' Error:Field validation for 'Id' failed on the 'required' tag"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.mock()
-			got, err := handler.UpdatePassword(context.Background(), tt.req)
+			tt.mockSetup(mockService)
 
-			if tt.wantErr != nil {
+			resp, err := handler.UpdatePassword(context.Background(), tt.req)
+
+			if tt.expectedError != nil {
 				assert.Error(t, err)
-				st, ok := status.FromError(err)
-				assert.True(t, ok)
-				if st.Code() == codes.InvalidArgument {
-					assert.Equal(t, codes.InvalidArgument, st.Code())
-				} else {
-					assert.Equal(t, tt.wantErr.Error(), err.Error())
-				}
-				assert.Nil(t, got)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+				assert.Nil(t, resp)
 			} else {
 				assert.NoError(t, err)
-				assert.NotNil(t, got)
+				assert.IsType(t, &emptypb.Empty{}, resp)
 			}
 		})
 	}
@@ -764,5 +817,9 @@ func TestUserGRPCService_UpdateAvatar(t *testing.T) {
 
 // Helper function to create string pointers
 func strPtr(s string) *string {
+	return &s
+}
+
+func stringPtr(s string) *string {
 	return &s
 }
