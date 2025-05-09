@@ -33,5 +33,6 @@ func (s *UserGRPCService) GetUserByUsername(ctx context.Context, req *pb.GetUser
 		AvatarUrl: user.AvatarURL,
 		CreatedAt: timestamppb.New(user.CreatedAt),
 		UpdatedAt: timestamppb.New(user.UpdatedAt),
+		Password:  user.Password,
 	}, nil
 }

@@ -63,7 +63,6 @@ func (s *Service) Get(ctx context.Context, id int64) (*model.User, error) {
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
-	user.Password = ""
 	return user, nil
 }
 
@@ -82,7 +81,6 @@ func (s *Service) GetByUsername(ctx context.Context, username string) (*model.Us
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
-	user.Password = ""
 	return user, nil
 }
 
@@ -101,7 +99,6 @@ func (s *Service) GetByEmail(ctx context.Context, email string) (*model.User, er
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
-	user.Password = ""
 	return user, nil
 }
 
