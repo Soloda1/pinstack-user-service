@@ -10,6 +10,7 @@ type Config struct {
 	Env        string
 	GRPCServer GRPCServer
 	Database   Database
+	Prometheus Prometheus
 }
 
 type GRPCServer struct {
@@ -24,6 +25,11 @@ type Database struct {
 	Port           string
 	DbName         string
 	MigrationsPath string
+}
+
+type Prometheus struct {
+	Address string
+	Port    int
 }
 
 func MustLoad() *Config {
@@ -43,6 +49,9 @@ func MustLoad() *Config {
 	viper.SetDefault("database.db_name", "userservice")
 	viper.SetDefault("database.migrations_path", "migrations")
 
+	viper.SetDefault("prometheus.address", "0.0.0.0")
+	viper.SetDefault("prometheus.port", 9101)
+
 	if err := viper.ReadInConfig(); err != nil {
 		log.Printf("Error reading config file: %s", err)
 		os.Exit(1)
@@ -61,6 +70,10 @@ func MustLoad() *Config {
 			Port:           viper.GetString("database.port"),
 			DbName:         viper.GetString("database.db_name"),
 			MigrationsPath: viper.GetString("database.migrations_path"),
+		},
+		Prometheus: Prometheus{
+			Address: viper.GetString("prometheus.address"),
+			Port:    viper.GetInt("prometheus.port"),
 		},
 	}
 
