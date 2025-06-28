@@ -162,18 +162,31 @@ func (s *Service) Search(ctx context.Context, query string, page, limit int) ([]
 }
 
 func (s *Service) UpdatePassword(ctx context.Context, id int64, oldPassword, newPassword string) error {
-	err := s.repo.UpdatePassword(ctx, id, newPassword)
+	user, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		switch {
 		case errors.Is(err, custom_errors.ErrUserNotFound):
 			s.log.Debug("User not found", slog.Int64("id", id))
 			return custom_errors.ErrUserNotFound
 		default:
-			s.log.Error("Failed to update password user",
+			s.log.Error("Failed to get user",
 				slog.String("error", err.Error()),
 				slog.Int64("id", id))
 			return custom_errors.ErrDatabaseQuery
 		}
+	}
+
+	if user.Password != oldPassword {
+		s.log.Debug("Invalid old password", slog.Int64("id", id))
+		return custom_errors.ErrInvalidPassword
+	}
+
+	err = s.repo.UpdatePassword(ctx, id, newPassword)
+	if err != nil {
+		s.log.Error("Failed update user",
+			slog.String("error", err.Error()),
+			slog.Int64("id", id))
+		return custom_errors.ErrDatabaseQuery
 	}
 	return nil
 }
