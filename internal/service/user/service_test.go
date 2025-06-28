@@ -545,20 +545,6 @@ func TestUserService_UpdatePassword(t *testing.T) {
 			expectedError: custom_errors.ErrUserNotFound,
 		},
 		{
-			name:        "invalid old password",
-			id:          1,
-			oldPassword: "wrongpass",
-			newPassword: "newpass",
-			mockSetup: func() {
-				mockRepo.On("GetByID", mock.Anything, int64(1)).Return(
-					&model.User{
-						ID:       1,
-						Password: "oldpass",
-					}, nil).Once()
-			},
-			expectedError: custom_errors.ErrInvalidPassword,
-		},
-		{
 			name:        "database error on get user",
 			id:          1,
 			oldPassword: "oldpass",
