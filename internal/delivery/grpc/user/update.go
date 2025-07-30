@@ -17,7 +17,7 @@ import (
 )
 
 type UpdateRequest struct {
-	Id       int64   `validate:"required,gt=1"`
+	Id       int64   `validate:"required,gte=1"`
 	Username *string `validate:"omitempty,min=3"`
 	Email    *string `validate:"omitempty,email"`
 	FullName *string `validate:"omitempty"`
