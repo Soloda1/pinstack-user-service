@@ -2,6 +2,9 @@ package user_grpc
 
 import (
 	"context"
+	"errors"
+	"log/slog"
+	"pinstack-user-service/internal/utils"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -39,10 +42,10 @@ func (s *UserGRPCService) UpdateUser(ctx context.Context, req *pb.UpdateUserRequ
 	}
 
 	if req.Username != nil {
-		user.Username = *req.Username
+		user.Username = utils.StrPtrToStr(req.Username)
 	}
 	if req.Email != nil {
-		user.Email = *req.Email
+		user.Email = utils.StrPtrToStr(req.Email)
 	}
 	if req.FullName != nil {
 		user.FullName = req.FullName
@@ -53,10 +56,11 @@ func (s *UserGRPCService) UpdateUser(ctx context.Context, req *pb.UpdateUserRequ
 
 	updatedUser, err := s.userService.Update(ctx, user)
 	if err != nil {
-		switch err {
-		case custom_errors.ErrUserNotFound:
+		switch {
+		case errors.Is(err, custom_errors.ErrUserNotFound):
 			return nil, status.Error(codes.NotFound, err.Error())
-		case custom_errors.ErrUsernameExists, custom_errors.ErrEmailExists:
+		case errors.Is(err, custom_errors.ErrUsernameExists), errors.Is(err, custom_errors.ErrEmailExists):
+			s.log.Debug("Email or Username already exists received in grpc", slog.String("error", err.Error()))
 			return nil, status.Error(codes.AlreadyExists, err.Error())
 		default:
 			return nil, status.Error(codes.Internal, err.Error())

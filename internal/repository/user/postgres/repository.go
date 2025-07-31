@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/logger"
+	"pinstack-user-service/internal/utils"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -26,6 +27,10 @@ func NewUserRepository(pool *pgxpool.Pool, log *logger.Logger) *Repository {
 }
 
 func (r *Repository) Create(ctx context.Context, user *model.User) (*model.User, error) {
+	r.log.Debug("Creating user in database",
+		slog.String("username", user.Username),
+		slog.String("email", user.Email))
+
 	createdAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
 
 	args := pgx.NamedArgs{
@@ -59,19 +64,33 @@ func (r *Repository) Create(ctx context.Context, user *model.User) (*model.User,
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			if pgErr.ConstraintName == "users_username_key" {
+				r.log.Debug("Username constraint violation",
+					slog.String("username", user.Username),
+					slog.String("error", err.Error()))
 				return nil, custom_errors.ErrUsernameExists
 			}
 			if pgErr.ConstraintName == "users_email_key" {
+				r.log.Debug("Email constraint violation",
+					slog.String("email", user.Email),
+					slog.String("error", err.Error()))
 				return nil, custom_errors.ErrEmailExists
 			}
 		}
+		r.log.Error("Error creating user in database",
+			slog.String("error", err.Error()),
+			slog.String("username", user.Username))
 		return nil, err
 	}
 
+	r.log.Debug("User created successfully in database",
+		slog.Int64("id", createdUser.ID),
+		slog.String("username", createdUser.Username))
 	return &createdUser, nil
 }
 
 func (r *Repository) GetByID(ctx context.Context, id int64) (*model.User, error) {
+	r.log.Debug("Getting user by ID from database", slog.Int64("id", id))
+
 	args := pgx.NamedArgs{"id": id}
 	query := `SELECT id, username, password, email, full_name, bio, avatar_url, created_at, updated_at
 				FROM users WHERE id = @id`
@@ -90,16 +109,23 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*model.User, error)
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			r.log.Debug("User not found by id", slog.String("error", err.Error()))
+			r.log.Debug("User not found by id",
+				slog.Int64("id", id),
+				slog.String("error", err.Error()))
 			return nil, custom_errors.ErrUserNotFound
 		}
 		r.log.Error("Error getting user by id", slog.String("error", err.Error()))
 		return nil, err
 	}
+	r.log.Debug("User retrieved by ID successfully from database",
+		slog.Int64("id", user.ID),
+		slog.String("username", user.Username))
 	return user, nil
 }
 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (*model.User, error) {
+	r.log.Debug("Getting user by username from database", slog.String("username", username))
+
 	args := pgx.NamedArgs{"username": username}
 	query := `SELECT id, username, password, email, full_name, bio, avatar_url, created_at, updated_at
 				FROM users WHERE username = @username`
@@ -118,16 +144,23 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*model
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			r.log.Debug("User not found by username", slog.String("error", err.Error()))
+			r.log.Debug("User not found by username",
+				slog.String("username", username),
+				slog.String("error", err.Error()))
 			return nil, custom_errors.ErrUserNotFound
 		}
 		r.log.Error("Error getting user by username", slog.String("error", err.Error()))
 		return nil, err
 	}
+	r.log.Debug("User retrieved by username successfully from database",
+		slog.Int64("id", user.ID),
+		slog.String("username", user.Username))
 	return user, nil
 }
 
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	r.log.Debug("Getting user by email from database", slog.String("email", email))
+
 	args := pgx.NamedArgs{"email": email}
 	query := `SELECT id, username, password, email, full_name, bio, avatar_url, created_at, updated_at
 				FROM users WHERE email = @email`
@@ -146,16 +179,25 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (*model.User,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			r.log.Debug("User not found by email", slog.String("error", err.Error()))
+			r.log.Debug("User not found by email",
+				slog.String("email", email),
+				slog.String("error", err.Error()))
 			return nil, custom_errors.ErrUserNotFound
 		}
 		r.log.Error("Error getting user by email", slog.String("error", err.Error()))
 		return nil, err
 	}
+	r.log.Debug("User retrieved by email successfully from database",
+		slog.Int64("id", user.ID),
+		slog.String("email", user.Email))
 	return user, nil
 }
 
 func (r *Repository) Update(ctx context.Context, user *model.User) (*model.User, error) {
+	r.log.Debug("Updating user in database",
+		slog.Int64("id", user.ID),
+		slog.String("username", user.Username))
+
 	updatedAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
 
 	args := pgx.NamedArgs{
@@ -175,11 +217,11 @@ func (r *Repository) Update(ctx context.Context, user *model.User) (*model.User,
 	}
 	if user.FullName != nil {
 		query += ", full_name = @full_name"
-		args["full_name"] = *user.FullName
+		args["full_name"] = utils.StrPtrToStr(user.FullName)
 	}
 	if user.Bio != nil {
 		query += ", bio = @bio"
-		args["bio"] = *user.Bio
+		args["bio"] = utils.StrPtrToStr(user.Bio)
 	}
 
 	query += ` WHERE id = @id 
@@ -198,24 +240,41 @@ func (r *Repository) Update(ctx context.Context, user *model.User) (*model.User,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			r.log.Debug("User not found for update",
+				slog.Int64("id", user.ID),
+				slog.String("error", err.Error()))
 			return nil, custom_errors.ErrUserNotFound
 		}
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			if pgErr.ConstraintName == "users_username_key" {
+				r.log.Debug("Username constraint violation during update",
+					slog.String("username", user.Username),
+					slog.String("error", err.Error()))
 				return nil, custom_errors.ErrUsernameExists
 			}
 			if pgErr.ConstraintName == "users_email_key" {
+				r.log.Debug("Email constraint violation during update",
+					slog.String("email", user.Email),
+					slog.String("error", err.Error()))
 				return nil, custom_errors.ErrEmailExists
 			}
 		}
+		r.log.Debug("Database error updating user",
+			slog.Int64("id", user.ID),
+			slog.String("error", err.Error()))
 		return nil, err
 	}
 
+	r.log.Debug("User updated successfully in database",
+		slog.Int64("id", updatedUser.ID),
+		slog.String("username", updatedUser.Username))
 	return &updatedUser, nil
 }
 
 func (r *Repository) Delete(ctx context.Context, id int64) error {
+	r.log.Debug("Deleting user from database", slog.Int64("id", id))
+
 	args := pgx.NamedArgs{"id": id}
 	query := `DELETE FROM users WHERE id = @id`
 	result, err := r.pool.Exec(ctx, query, args)
@@ -226,10 +285,16 @@ func (r *Repository) Delete(ctx context.Context, id int64) error {
 	if result.RowsAffected() == 0 {
 		return custom_errors.ErrUserNotFound
 	}
+	r.log.Debug("User deleted successfully from database", slog.Int64("id", id))
 	return nil
 }
 
 func (r *Repository) Search(ctx context.Context, searchQuery string, offset, limit int) ([]*model.User, int, error) {
+	r.log.Debug("Searching users in database",
+		slog.String("query", searchQuery),
+		slog.Int("offset", offset),
+		slog.Int("limit", limit))
+
 	args := pgx.NamedArgs{
 		"query":  searchQuery,
 		"offset": offset,
@@ -272,10 +337,15 @@ func (r *Repository) Search(ctx context.Context, searchQuery string, offset, lim
 		users = append(users, &user)
 	}
 
+	r.log.Debug("Search completed successfully in database",
+		slog.String("query", searchQuery),
+		slog.Int("count", len(users)))
 	return users, len(users), nil
 }
 
 func (r *Repository) UpdatePassword(ctx context.Context, id int64, newPassword string) error {
+	r.log.Debug("Updating user password in database", slog.Int64("id", id))
+
 	updatedAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
 	args := pgx.NamedArgs{
 		"id":         id,
@@ -294,16 +364,24 @@ func (r *Repository) UpdatePassword(ctx context.Context, id int64, newPassword s
 	err := r.pool.QueryRow(ctx, query, args).Scan(&userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			r.log.Debug("User not found for password update",
+				slog.Int64("id", id),
+				slog.String("error", err.Error()))
 			return custom_errors.ErrUserNotFound
 		}
 		r.log.Error("Error updating password", slog.String("error", err.Error()))
 		return err
 	}
 
+	r.log.Debug("User password updated successfully in database", slog.Int64("id", id))
 	return nil
 }
 
 func (r *Repository) UpdateAvatar(ctx context.Context, id int64, avatarURL string) error {
+	r.log.Debug("Updating user avatar in database",
+		slog.Int64("id", id),
+		slog.String("avatarURL", avatarURL))
+
 	updatedAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
 
 	args := pgx.NamedArgs{
@@ -323,11 +401,15 @@ func (r *Repository) UpdateAvatar(ctx context.Context, id int64, avatarURL strin
 	err := r.pool.QueryRow(ctx, query, args).Scan(&userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			r.log.Debug("User not found for avatar update",
+				slog.Int64("id", id),
+				slog.String("error", err.Error()))
 			return custom_errors.ErrUserNotFound
 		}
 		r.log.Error("Error updating avatar", slog.String("error", err.Error()))
 		return err
 	}
 
+	r.log.Debug("User avatar updated successfully in database", slog.Int64("id", id))
 	return nil
 }

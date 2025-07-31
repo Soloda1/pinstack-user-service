@@ -2,6 +2,7 @@ package user_service
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/logger"
@@ -9,7 +10,6 @@ import (
 	user_repository "pinstack-user-service/internal/repository/user"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/pkg/errors"
 )
 
 type Service struct {
@@ -25,6 +25,10 @@ func NewUserService(repo user_repository.UserRepository, log *logger.Logger) *Se
 }
 
 func (s *Service) Create(ctx context.Context, user *model.User) (*model.User, error) {
+	s.log.Debug("Creating user",
+		slog.String("username", user.Username),
+		slog.String("email", user.Email))
+
 	createdUser, err := s.repo.Create(ctx, user)
 	if err != nil {
 		switch {
@@ -45,10 +49,15 @@ func (s *Service) Create(ctx context.Context, user *model.User) (*model.User, er
 		}
 	}
 
+	s.log.Debug("User created successfully",
+		slog.Int64("id", createdUser.ID),
+		slog.String("username", createdUser.Username))
 	return createdUser, nil
 }
 
 func (s *Service) Get(ctx context.Context, id int64) (*model.User, error) {
+	s.log.Debug("Getting user by ID", slog.Int64("id", id))
+
 	user, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		switch {
@@ -63,10 +72,15 @@ func (s *Service) Get(ctx context.Context, id int64) (*model.User, error) {
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
+	s.log.Debug("User retrieved successfully",
+		slog.Int64("id", user.ID),
+		slog.String("username", user.Username))
 	return user, nil
 }
 
 func (s *Service) GetByUsername(ctx context.Context, username string) (*model.User, error) {
+	s.log.Debug("Getting user by username", slog.String("username", username))
+
 	user, err := s.repo.GetByUsername(ctx, username)
 	if err != nil {
 		switch {
@@ -81,10 +95,15 @@ func (s *Service) GetByUsername(ctx context.Context, username string) (*model.Us
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
+	s.log.Debug("User retrieved by username successfully",
+		slog.Int64("id", user.ID),
+		slog.String("username", user.Username))
 	return user, nil
 }
 
 func (s *Service) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	s.log.Debug("Getting user by email", slog.String("email", email))
+
 	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
 		switch {
@@ -99,13 +118,26 @@ func (s *Service) GetByEmail(ctx context.Context, email string) (*model.User, er
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
+	s.log.Debug("User retrieved by email successfully",
+		slog.Int64("id", user.ID),
+		slog.String("email", user.Email))
 	return user, nil
 }
 
 func (s *Service) Update(ctx context.Context, user *model.User) (*model.User, error) {
-	user, err := s.repo.Update(ctx, user)
+	s.log.Debug("Updating user",
+		slog.Int64("id", user.ID),
+		slog.String("username", user.Username))
+
+	updatedUser, err := s.repo.Update(ctx, user)
 	if err != nil {
 		switch {
+		case errors.Is(err, custom_errors.ErrUsernameExists):
+			s.log.Debug("Username already exists", slog.String("username", user.Username))
+			return nil, custom_errors.ErrUsernameExists
+		case errors.Is(err, custom_errors.ErrEmailExists):
+			s.log.Debug("Email already exists", slog.String("email", user.Email))
+			return nil, custom_errors.ErrEmailExists
 		case errors.Is(err, custom_errors.ErrUserNotFound):
 			s.log.Debug("User not found", slog.Int64("id", user.ID))
 			return nil, custom_errors.ErrUserNotFound
@@ -117,10 +149,15 @@ func (s *Service) Update(ctx context.Context, user *model.User) (*model.User, er
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
-	return user, nil
+	s.log.Debug("User updated successfully",
+		slog.Int64("id", updatedUser.ID),
+		slog.String("username", updatedUser.Username))
+	return updatedUser, nil
 }
 
 func (s *Service) Delete(ctx context.Context, id int64) error {
+	s.log.Debug("Deleting user", slog.Int64("id", id))
+
 	err := s.repo.Delete(ctx, id)
 	if err != nil {
 		switch {
@@ -135,10 +172,16 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 			return custom_errors.ErrDatabaseQuery
 		}
 	}
+	s.log.Debug("User deleted successfully", slog.Int64("id", id))
 	return nil
 }
 
 func (s *Service) Search(ctx context.Context, query string, page, limit int) ([]*model.User, int, error) {
+	s.log.Debug("Searching users",
+		slog.String("query", query),
+		slog.Int("page", page),
+		slog.Int("limit", limit))
+
 	offset := (page - 1) * limit
 	users, count, err := s.repo.Search(ctx, query, offset, limit)
 	if err != nil {
@@ -158,10 +201,15 @@ func (s *Service) Search(ctx context.Context, query string, page, limit int) ([]
 			return nil, 0, custom_errors.ErrDatabaseQuery
 		}
 	}
+	s.log.Debug("Search completed successfully",
+		slog.String("query", query),
+		slog.Int("count", count))
 	return users, count, nil
 }
 
 func (s *Service) UpdatePassword(ctx context.Context, id int64, oldPassword, newPassword string) error {
+	s.log.Debug("Updating user password", slog.Int64("id", id))
+
 	_, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		switch {
@@ -183,10 +231,15 @@ func (s *Service) UpdatePassword(ctx context.Context, id int64, oldPassword, new
 			slog.Int64("id", id))
 		return custom_errors.ErrDatabaseQuery
 	}
+	s.log.Debug("User password updated successfully", slog.Int64("id", id))
 	return nil
 }
 
 func (s *Service) UpdateAvatar(ctx context.Context, id int64, avatarURL string) error {
+	s.log.Debug("Updating user avatar",
+		slog.Int64("id", id),
+		slog.String("avatarURL", avatarURL))
+
 	err := s.repo.UpdateAvatar(ctx, id, avatarURL)
 	if err != nil {
 		switch {
@@ -202,5 +255,6 @@ func (s *Service) UpdateAvatar(ctx context.Context, id int64, avatarURL string) 
 		}
 	}
 
+	s.log.Debug("User avatar updated successfully", slog.Int64("id", id))
 	return nil
 }
