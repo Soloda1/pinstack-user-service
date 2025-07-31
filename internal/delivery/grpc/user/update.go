@@ -17,7 +17,7 @@ import (
 )
 
 type UpdateRequest struct {
-	Id       int64   `validate:"required,gte=1"`
+	Id       int64   `validate:"required,gt=0"`
 	Username *string `validate:"omitempty,min=3"`
 	Email    *string `validate:"omitempty,email"`
 	FullName *string `validate:"omitempty"`
@@ -60,7 +60,7 @@ func (s *UserGRPCService) UpdateUser(ctx context.Context, req *pb.UpdateUserRequ
 		case errors.Is(err, custom_errors.ErrUserNotFound):
 			return nil, status.Error(codes.NotFound, err.Error())
 		case errors.Is(err, custom_errors.ErrUsernameExists), errors.Is(err, custom_errors.ErrEmailExists):
-			s.log.Debug("Email or Username already exists got in grpc", slog.String("error", err.Error()))
+			s.log.Debug("Email or Username already exists received in grpc", slog.String("error", err.Error()))
 			return nil, status.Error(codes.AlreadyExists, err.Error())
 		default:
 			return nil, status.Error(codes.Internal, err.Error())
