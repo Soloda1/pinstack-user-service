@@ -7,7 +7,6 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.18.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/jackc/pgx/v5 v5.5.4
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/soloda1/pinstack-proto-definitions v0.1.13
 	github.com/spf13/viper v1.20.1
