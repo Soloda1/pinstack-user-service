@@ -41,7 +41,7 @@ test-unit: check-go-version
 start-user-infrastructure: setup-system-tests
 	@echo "🚀 Запуск полной инфраструктуры для интеграционных тестов..."
 	cd $(SYSTEM_TESTS_DIR) && \
-	docker-compose -f docker-compose.test.yml up -d \
+	docker compose -f docker-compose.test.yml up -d \
 		user-db-test \
 		user-migrator-test \
 		user-service-test \
@@ -75,7 +75,7 @@ test-user-integration: start-user-infrastructure check-services
 stop-user-infrastructure:
 	@echo "🛑 Остановка всей инфраструктуры..."
 	cd $(SYSTEM_TESTS_DIR) && \
-	docker-compose -f docker-compose.test.yml stop \
+	docker compose -f docker-compose.test.yml stop \
 		api-gateway-test \
 		auth-service-test \
 		auth-migrator-test \
@@ -84,7 +84,7 @@ stop-user-infrastructure:
 		user-migrator-test \
 		user-db-test
 	cd $(SYSTEM_TESTS_DIR) && \
-	docker-compose -f docker-compose.test.yml rm -f \
+	docker compose -f docker-compose.test.yml rm -f \
 		api-gateway-test \
 		auth-service-test \
 		auth-migrator-test \
@@ -97,7 +97,7 @@ stop-user-infrastructure:
 clean-user-infrastructure:
 	@echo "🧹 Полная очистка всей инфраструктуры..."
 	cd $(SYSTEM_TESTS_DIR) && \
-	docker-compose -f docker-compose.test.yml down -v
+	docker compose -f docker-compose.test.yml down -v
 	@echo "🧹 Очистка Docker контейнеров, образов и volumes..."
 	docker container prune -f
 	docker image prune -a -f
@@ -114,23 +114,23 @@ test-all: fmt lint test-unit test-integration
 # Логи сервисов
 logs-user:
 	cd $(SYSTEM_TESTS_DIR) && \
-	docker-compose -f docker-compose.test.yml logs -f user-service-test
+	docker compose -f docker-compose.test.yml logs -f user-service-test
 
 logs-auth:
 	cd $(SYSTEM_TESTS_DIR) && \
-	docker-compose -f docker-compose.test.yml logs -f auth-service-test
+	docker compose -f docker-compose.test.yml logs -f auth-service-test
 
 logs-gateway:
 	cd $(SYSTEM_TESTS_DIR) && \
-	docker-compose -f docker-compose.test.yml logs -f api-gateway-test
+	docker compose -f docker-compose.test.yml logs -f api-gateway-test
 
 logs-db:
 	cd $(SYSTEM_TESTS_DIR) && \
-	docker-compose -f docker-compose.test.yml logs -f user-db-test
+	docker compose -f docker-compose.test.yml logs -f user-db-test
 
 logs-auth-db:
 	cd $(SYSTEM_TESTS_DIR) && \
-	docker-compose -f docker-compose.test.yml logs -f auth-db-test
+	docker compose -f docker-compose.test.yml logs -f auth-db-test
 
 # Очистка
 clean: clean-user-infrastructure

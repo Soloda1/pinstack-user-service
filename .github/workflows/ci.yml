@@ -83,7 +83,7 @@ jobs:
       working-directory: pinstack-system-tests
       run: |
         # Запускаем все необходимые контейнеры для интеграционных тестов
-        docker-compose -f docker-compose.test.yml up -d \
+        docker compose -f docker-compose.test.yml up -d \
           user-db-test \
           user-migrator-test \
           user-service-test \
@@ -122,26 +122,26 @@ jobs:
       working-directory: pinstack-system-tests
       run: |
         echo "=== Логи User Service ==="
-        docker-compose -f docker-compose.test.yml logs user-service-test
+        docker compose -f docker-compose.test.yml logs user-service-test
         echo "=== Логи User Migrator ==="
-        docker-compose -f docker-compose.test.yml logs user-migrator-test
+        docker compose -f docker-compose.test.yml logs user-migrator-test
         echo "=== Логи User Database ==="
-        docker-compose -f docker-compose.test.yml logs user-db-test
+        docker compose -f docker-compose.test.yml logs user-db-test
         echo "=== Логи Auth Service ==="
-        docker-compose -f docker-compose.test.yml logs auth-service-test
+        docker compose -f docker-compose.test.yml logs auth-service-test
         echo "=== Логи Auth Migrator ==="
-        docker-compose -f docker-compose.test.yml logs auth-migrator-test
+        docker compose -f docker-compose.test.yml logs auth-migrator-test
         echo "=== Логи Auth Database ==="
-        docker-compose -f docker-compose.test.yml logs auth-db-test
+        docker compose -f docker-compose.test.yml logs auth-db-test
         echo "=== Логи API Gateway ==="
-        docker-compose -f docker-compose.test.yml logs api-gateway-test
+        docker compose -f docker-compose.test.yml logs api-gateway-test
 
     - name: Stop services
       if: always()
       working-directory: pinstack-system-tests
       run: |
         echo "🛑 Остановка всех сервисов..."
-        docker-compose -f docker-compose.test.yml down -v
+        docker compose -f docker-compose.test.yml down -v
         
         echo "🧹 Полная очистка Docker..."
         # Удаляем все остановленные контейнеры
