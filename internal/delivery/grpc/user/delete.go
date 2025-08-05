@@ -2,8 +2,7 @@ package user_grpc
 
 import (
 	"context"
-
-	"pinstack-user-service/internal/custom_errors"
+	"github.com/soloda1/pinstack-proto-definitions/custom_errors"
 
 	pb "github.com/soloda1/pinstack-proto-definitions/gen/go/pinstack-proto-definitions/user/v1"
 	"google.golang.org/grpc/codes"

@@ -3,6 +3,7 @@ package user_grpc
 import (
 	"context"
 	"errors"
+	"github.com/soloda1/pinstack-proto-definitions/custom_errors"
 	"log/slog"
 	"pinstack-user-service/internal/utils"
 
@@ -10,7 +11,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/model"
 
 	pb "github.com/soloda1/pinstack-proto-definitions/gen/go/pinstack-proto-definitions/user/v1"
