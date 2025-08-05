@@ -3,8 +3,8 @@ package user_repository
 import (
 	"context"
 	"errors"
+	"github.com/soloda1/pinstack-proto-definitions/custom_errors"
 	"log/slog"
-	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/logger"
 	"pinstack-user-service/internal/utils"
 	"time"

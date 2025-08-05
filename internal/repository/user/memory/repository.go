@@ -2,12 +2,12 @@ package memory
 
 import (
 	"context"
+	"github.com/soloda1/pinstack-proto-definitions/custom_errors"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/logger"
 	"pinstack-user-service/internal/model"
 )

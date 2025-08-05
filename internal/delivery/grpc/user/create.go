@@ -2,11 +2,10 @@ package user_grpc
 
 import (
 	"context"
+	"github.com/soloda1/pinstack-proto-definitions/custom_errors"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/model"
 	"pinstack-user-service/internal/utils"
 

@@ -2,13 +2,13 @@ package user_repository_test
 
 import (
 	"context"
+	"github.com/soloda1/pinstack-proto-definitions/custom_errors"
 	"pinstack-user-service/internal/logger"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/model"
 	user_repository "pinstack-user-service/internal/repository/user"
 	"pinstack-user-service/internal/repository/user/memory"

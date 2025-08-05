@@ -2,6 +2,7 @@ package user_grpc_test
 
 import (
 	"context"
+	"github.com/soloda1/pinstack-proto-definitions/custom_errors"
 	"testing"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"pinstack-user-service/internal/custom_errors"
 	user_grpc "pinstack-user-service/internal/delivery/grpc/user"
 	"pinstack-user-service/internal/logger"
 	"pinstack-user-service/internal/model"

@@ -2,12 +2,12 @@ package user_service_test
 
 import (
 	"context"
+	"github.com/soloda1/pinstack-proto-definitions/custom_errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"pinstack-user-service/internal/custom_errors"
 	"pinstack-user-service/internal/logger"
 	"pinstack-user-service/internal/model"
 	user_service "pinstack-user-service/internal/service/user"

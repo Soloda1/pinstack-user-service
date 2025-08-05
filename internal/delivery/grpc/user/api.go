@@ -1,9 +1,10 @@
 package user_grpc
 
 import (
-	"github.com/go-playground/validator/v10"
 	"pinstack-user-service/internal/logger"
 	user_service "pinstack-user-service/internal/service/user"
+
+	"github.com/go-playground/validator/v10"
 
 	pb "github.com/soloda1/pinstack-proto-definitions/gen/go/pinstack-proto-definitions/user/v1"
 )

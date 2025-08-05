@@ -2,14 +2,15 @@ package grpc
 
 import (
 	"fmt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"log/slog"
 	"net"
 	user_grpc "pinstack-user-service/internal/delivery/grpc/user"
 	"pinstack-user-service/internal/logger"
 	"pinstack-user-service/internal/middleware"
 	"runtime/debug"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"

@@ -2,8 +2,8 @@ package user_grpc
 
 import (
 	"context"
-
-	"pinstack-user-service/internal/custom_errors"
+	"errors"
+	"github.com/soloda1/pinstack-proto-definitions/custom_errors"
 
 	pb "github.com/soloda1/pinstack-proto-definitions/gen/go/pinstack-proto-definitions/user/v1"
 	"google.golang.org/grpc/codes"
@@ -26,8 +26,8 @@ func (s *UserGRPCService) UpdateAvatar(ctx context.Context, req *pb.UpdateAvatar
 	}
 
 	if err := s.userService.UpdateAvatar(ctx, req.Id, req.AvatarUrl); err != nil {
-		switch err {
-		case custom_errors.ErrUserNotFound:
+		switch {
+		case errors.Is(err, custom_errors.ErrUserNotFound):
 			return nil, status.Error(codes.NotFound, err.Error())
 		default:
 			return nil, status.Error(codes.Internal, err.Error())
