@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"pinstack-user-service/config"
-	"pinstack-user-service/internal/delivery/grpc"
-	user_grpc "pinstack-user-service/internal/delivery/grpc/user"
-	"pinstack-user-service/internal/logger"
-	user_repository "pinstack-user-service/internal/repository/user/postgres"
-	user_service "pinstack-user-service/internal/service/user"
+	user_service "pinstack-user-service/internal/application/service"
+	"pinstack-user-service/internal/infrastructure/config"
+	infra_grpc "pinstack-user-service/internal/infrastructure/inbound/grpc"
+	user_grpc "pinstack-user-service/internal/infrastructure/inbound/grpc/user"
+	"pinstack-user-service/internal/infrastructure/logger"
+	user_repository "pinstack-user-service/internal/infrastructure/outbound/repository/postgres"
 	"syscall"
 	"time"
 
@@ -49,7 +49,7 @@ func main() {
 	userService := user_service.NewUserService(userRepo, log)
 
 	userGRPCApi := user_grpc.NewUserGRPCService(userService, log)
-	grpcServer := grpc.NewServer(userGRPCApi, cfg.GRPCServer.Address, cfg.GRPCServer.Port, log)
+	grpcServer := infra_grpc.NewServer(userGRPCApi, cfg.GRPCServer.Address, cfg.GRPCServer.Port, log)
 
 	metricsAddr := fmt.Sprintf("%s:%d", cfg.Prometheus.Address, cfg.Prometheus.Port)
 	metricsServer := &http.Server{

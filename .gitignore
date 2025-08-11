@@ -43,3 +43,4 @@ go.sum
 # Coverage
 /coverage/
 *.cover 
+/.idea/
