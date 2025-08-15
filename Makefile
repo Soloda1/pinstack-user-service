@@ -41,7 +41,7 @@ test-unit: check-go-version
 start-user-infrastructure: setup-system-tests
 	@echo "🚀 Запуск полной инфраструктуры для интеграционных тестов..."
 	cd $(SYSTEM_TESTS_DIR) && \
-	docker compose -f docker-compose.test.yml up -d \
+	USER_SERVICE_CONTEXT=../pinstack-user-service docker compose -f docker-compose.test.yml up -d \
 		user-db-test \
 		user-migrator-test \
 		user-service-test \
@@ -131,6 +131,20 @@ logs-db:
 logs-auth-db:
 	cd $(SYSTEM_TESTS_DIR) && \
 	docker compose -f docker-compose.test.yml logs -f auth-db-test
+
+# Быстрый тест с локальным user-service
+quick-test-local: setup-system-tests
+	@echo "⚡ Быстрый запуск тестов с локальным user-service..."
+	cd $(SYSTEM_TESTS_DIR) && \
+	USER_SERVICE_CONTEXT=../pinstack-user-service docker compose -f docker-compose.test.yml up -d \
+		user-db-test user-migrator-test user-service-test \
+		auth-db-test auth-migrator-test auth-service-test \
+		api-gateway-test
+	@echo "⏳ Ожидание готовности сервисов..."
+	@sleep 30
+	cd $(SYSTEM_TESTS_DIR) && \
+	go test -v -count=1 -timeout=5m ./internal/scenarios/integration/gateway_user/...
+	$(MAKE) stop-user-infrastructure
 
 # Очистка
 clean: clean-user-infrastructure
