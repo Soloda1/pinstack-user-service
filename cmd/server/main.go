@@ -13,6 +13,7 @@ import (
 	infra_grpc "pinstack-user-service/internal/infrastructure/inbound/grpc"
 	user_grpc "pinstack-user-service/internal/infrastructure/inbound/grpc/user"
 	"pinstack-user-service/internal/infrastructure/logger"
+	redis_cache "pinstack-user-service/internal/infrastructure/outbound/cache/redis"
 	user_repository "pinstack-user-service/internal/infrastructure/outbound/repository/postgres"
 	"syscall"
 	"time"
@@ -45,8 +46,31 @@ func main() {
 	}
 	defer pool.Close()
 
+	log.Info("Connecting to Redis",
+		slog.String("address", cfg.Redis.Address),
+		slog.Int("port", cfg.Redis.Port),
+		slog.Int("db", cfg.Redis.DB))
+	redisClient, err := redis_cache.NewClient(cfg.Redis, log)
+	if err != nil {
+		log.Error("Failed to create Redis client", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer func() {
+		if err := redisClient.Close(); err != nil {
+			log.Error("Failed to close Redis connection", slog.String("error", err.Error()))
+		}
+	}()
+
+	userCache := redis_cache.NewUserCache(redisClient, log)
+
 	userRepo := user_repository.NewUserRepository(pool, log)
-	userService := user_service.NewUserService(userRepo, log)
+	originalUserService := user_service.NewUserService(userRepo, log)
+
+	userService := user_service.NewUserServiceCacheDecorator(
+		originalUserService,
+		userCache,
+		log,
+	)
 
 	userGRPCApi := user_grpc.NewUserGRPCService(userService, log)
 	grpcServer := infra_grpc.NewServer(userGRPCApi, cfg.GRPCServer.Address, cfg.GRPCServer.Port, log)
