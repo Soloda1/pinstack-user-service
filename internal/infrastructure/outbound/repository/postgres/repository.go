@@ -19,15 +19,17 @@ import (
 )
 
 type Repository struct {
-	pool *pgxpool.Pool
-	log  ports.Logger
+	pool    *pgxpool.Pool
+	log     ports.Logger
+	metrics ports.MetricsProvider
 }
 
-func NewUserRepository(pool *pgxpool.Pool, log ports.Logger) *Repository {
-	return &Repository{pool, log}
+func NewUserRepository(pool *pgxpool.Pool, log ports.Logger, metrics ports.MetricsProvider) *Repository {
+	return &Repository{pool: pool, log: log, metrics: metrics}
 }
 
 func (r *Repository) Create(ctx context.Context, user *models.User) (*models.User, error) {
+	start := time.Now()
 	r.log.Debug("Creating user in database",
 		slog.String("username", user.Username),
 		slog.String("email", user.Email))
@@ -61,7 +63,12 @@ func (r *Repository) Create(ctx context.Context, user *models.User) (*models.Use
 		&createdUser.CreatedAt,
 		&createdUser.UpdatedAt,
 	)
+
+	duration := time.Since(start)
+	r.metrics.RecordDatabaseQueryDuration("insert", duration)
+
 	if err != nil {
+		r.metrics.IncrementDatabaseQueries("insert", false)
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			if pgErr.ConstraintName == "users_username_key" {
@@ -83,6 +90,7 @@ func (r *Repository) Create(ctx context.Context, user *models.User) (*models.Use
 		return nil, err
 	}
 
+	r.metrics.IncrementDatabaseQueries("insert", true)
 	r.log.Debug("User created successfully in database",
 		slog.Int64("id", createdUser.ID),
 		slog.String("username", createdUser.Username))
@@ -90,6 +98,7 @@ func (r *Repository) Create(ctx context.Context, user *models.User) (*models.Use
 }
 
 func (r *Repository) GetByID(ctx context.Context, id int64) (*models.User, error) {
+	start := time.Now()
 	r.log.Debug("Getting user by ID from database", slog.Int64("id", id))
 
 	args := pgx.NamedArgs{"id": id}
@@ -108,7 +117,12 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*models.User, error
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
+
+	duration := time.Since(start)
+	r.metrics.RecordDatabaseQueryDuration("select", duration)
+
 	if err != nil {
+		r.metrics.IncrementDatabaseQueries("select", false)
 		if errors.Is(err, pgx.ErrNoRows) {
 			r.log.Debug("User not found by id",
 				slog.Int64("id", id),
@@ -118,6 +132,8 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*models.User, error
 		r.log.Error("Error getting user by id", slog.String("error", err.Error()))
 		return nil, err
 	}
+
+	r.metrics.IncrementDatabaseQueries("select", true)
 	r.log.Debug("User retrieved by ID successfully from database",
 		slog.Int64("id", user.ID),
 		slog.String("username", user.Username))
@@ -125,6 +141,7 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*models.User, error
 }
 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (*models.User, error) {
+	start := time.Now()
 	r.log.Debug("Getting user by username from database", slog.String("username", username))
 
 	args := pgx.NamedArgs{"username": username}
@@ -143,7 +160,12 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*model
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
+
+	duration := time.Since(start)
+	r.metrics.RecordDatabaseQueryDuration("select", duration)
+
 	if err != nil {
+		r.metrics.IncrementDatabaseQueries("select", false)
 		if errors.Is(err, pgx.ErrNoRows) {
 			r.log.Debug("User not found by username",
 				slog.String("username", username),
@@ -153,6 +175,8 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*model
 		r.log.Error("Error getting user by username", slog.String("error", err.Error()))
 		return nil, err
 	}
+
+	r.metrics.IncrementDatabaseQueries("select", true)
 	r.log.Debug("User retrieved by username successfully from database",
 		slog.Int64("id", user.ID),
 		slog.String("username", user.Username))
@@ -160,6 +184,7 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*model
 }
 
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	start := time.Now()
 	r.log.Debug("Getting user by email from database", slog.String("email", email))
 
 	args := pgx.NamedArgs{"email": email}
@@ -178,7 +203,12 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (*models.User
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
+
+	duration := time.Since(start)
+	r.metrics.RecordDatabaseQueryDuration("select", duration)
+
 	if err != nil {
+		r.metrics.IncrementDatabaseQueries("select", false)
 		if errors.Is(err, pgx.ErrNoRows) {
 			r.log.Debug("User not found by email",
 				slog.String("email", email),
@@ -188,6 +218,8 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (*models.User
 		r.log.Error("Error getting user by email", slog.String("error", err.Error()))
 		return nil, err
 	}
+
+	r.metrics.IncrementDatabaseQueries("select", true)
 	r.log.Debug("User retrieved by email successfully from database",
 		slog.Int64("id", user.ID),
 		slog.String("email", user.Email))
@@ -195,6 +227,7 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (*models.User
 }
 
 func (r *Repository) Update(ctx context.Context, user *models.User) (*models.User, error) {
+	start := time.Now()
 	r.log.Debug("Updating user in database",
 		slog.Int64("id", user.ID),
 		slog.String("username", user.Username))
@@ -239,7 +272,12 @@ func (r *Repository) Update(ctx context.Context, user *models.User) (*models.Use
 		&updatedUser.CreatedAt,
 		&updatedUser.UpdatedAt,
 	)
+
+	duration := time.Since(start)
+	r.metrics.RecordDatabaseQueryDuration("update", duration)
+
 	if err != nil {
+		r.metrics.IncrementDatabaseQueries("update", false)
 		if errors.Is(err, pgx.ErrNoRows) {
 			r.log.Debug("User not found for update",
 				slog.Int64("id", user.ID),
@@ -267,6 +305,7 @@ func (r *Repository) Update(ctx context.Context, user *models.User) (*models.Use
 		return nil, err
 	}
 
+	r.metrics.IncrementDatabaseQueries("update", true)
 	r.log.Debug("User updated successfully in database",
 		slog.Int64("id", updatedUser.ID),
 		slog.String("username", updatedUser.Username))
@@ -274,23 +313,33 @@ func (r *Repository) Update(ctx context.Context, user *models.User) (*models.Use
 }
 
 func (r *Repository) Delete(ctx context.Context, id int64) error {
+	start := time.Now()
 	r.log.Debug("Deleting user from database", slog.Int64("id", id))
 
 	args := pgx.NamedArgs{"id": id}
 	query := `DELETE FROM users WHERE id = @id`
 	result, err := r.pool.Exec(ctx, query, args)
+
+	duration := time.Since(start)
+	r.metrics.RecordDatabaseQueryDuration("delete", duration)
+
 	if err != nil {
+		r.metrics.IncrementDatabaseQueries("delete", false)
 		r.log.Error("Error deleting user", slog.String("error", err.Error()))
 		return err
 	}
 	if result.RowsAffected() == 0 {
+		r.metrics.IncrementDatabaseQueries("delete", false)
 		return custom_errors.ErrUserNotFound
 	}
+
+	r.metrics.IncrementDatabaseQueries("delete", true)
 	r.log.Debug("User deleted successfully from database", slog.Int64("id", id))
 	return nil
 }
 
 func (r *Repository) Search(ctx context.Context, searchQuery string, offset, limit int) ([]*models.User, int, error) {
+	start := time.Now()
 	r.log.Debug("Searching users in database",
 		slog.String("query", searchQuery),
 		slog.Int("offset", offset),
@@ -313,6 +362,9 @@ func (r *Repository) Search(ctx context.Context, searchQuery string, offset, lim
 
 	rows, err := r.pool.Query(ctx, query, args)
 	if err != nil {
+		duration := time.Since(start)
+		r.metrics.RecordDatabaseQueryDuration("select", duration)
+		r.metrics.IncrementDatabaseQueries("select", false)
 		r.log.Error("Error searching users", slog.String("error", err.Error()))
 		return nil, 0, err
 	}
@@ -338,6 +390,10 @@ func (r *Repository) Search(ctx context.Context, searchQuery string, offset, lim
 		users = append(users, &user)
 	}
 
+	duration := time.Since(start)
+	r.metrics.RecordDatabaseQueryDuration("select", duration)
+	r.metrics.IncrementDatabaseQueries("select", true)
+
 	r.log.Debug("Search completed successfully in database",
 		slog.String("query", searchQuery),
 		slog.Int("count", len(users)))
@@ -345,6 +401,7 @@ func (r *Repository) Search(ctx context.Context, searchQuery string, offset, lim
 }
 
 func (r *Repository) UpdatePassword(ctx context.Context, id int64, newPassword string) error {
+	start := time.Now()
 	r.log.Debug("Updating user password in database", slog.Int64("id", id))
 
 	updatedAt := pgtype.Timestamptz{Time: time.Now(), Valid: true}
@@ -363,7 +420,12 @@ func (r *Repository) UpdatePassword(ctx context.Context, id int64, newPassword s
 
 	var userID int64
 	err := r.pool.QueryRow(ctx, query, args).Scan(&userID)
+
+	duration := time.Since(start)
+	r.metrics.RecordDatabaseQueryDuration("update", duration)
+
 	if err != nil {
+		r.metrics.IncrementDatabaseQueries("update", false)
 		if errors.Is(err, pgx.ErrNoRows) {
 			r.log.Debug("User not found for password update",
 				slog.Int64("id", id),
@@ -374,11 +436,13 @@ func (r *Repository) UpdatePassword(ctx context.Context, id int64, newPassword s
 		return err
 	}
 
+	r.metrics.IncrementDatabaseQueries("update", true)
 	r.log.Debug("User password updated successfully in database", slog.Int64("id", id))
 	return nil
 }
 
 func (r *Repository) UpdateAvatar(ctx context.Context, id int64, avatarURL string) error {
+	start := time.Now()
 	r.log.Debug("Updating user avatar in database",
 		slog.Int64("id", id),
 		slog.String("avatarURL", avatarURL))
@@ -400,7 +464,12 @@ func (r *Repository) UpdateAvatar(ctx context.Context, id int64, avatarURL strin
 
 	var userID int64
 	err := r.pool.QueryRow(ctx, query, args).Scan(&userID)
+
+	duration := time.Since(start)
+	r.metrics.RecordDatabaseQueryDuration("update", duration)
+
 	if err != nil {
+		r.metrics.IncrementDatabaseQueries("update", false)
 		if errors.Is(err, pgx.ErrNoRows) {
 			r.log.Debug("User not found for avatar update",
 				slog.Int64("id", id),
@@ -411,6 +480,7 @@ func (r *Repository) UpdateAvatar(ctx context.Context, id int64, avatarURL strin
 		return err
 	}
 
+	r.metrics.IncrementDatabaseQueries("update", true)
 	r.log.Debug("User avatar updated successfully in database", slog.Int64("id", id))
 	return nil
 }
