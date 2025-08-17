@@ -202,6 +202,7 @@ func (u *UserCache) DeleteUser(ctx context.Context, user *models.User) error {
 }
 
 func (u *UserCache) DeleteUserByID(ctx context.Context, userID int64) error {
+	start := time.Now()
 	user, err := u.GetUserByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, custom_errors.ErrCacheMiss) {
@@ -217,12 +218,6 @@ func (u *UserCache) DeleteUserByID(ctx context.Context, userID int64) error {
 		return u.DeleteUser(ctx, user)
 	}
 
-	start := time.Now()
-	defer func() {
-		duration := time.Since(start)
-		u.metrics.RecordCacheOperationDuration("delete", duration)
-	}()
-
 	idKey := u.getUserKey(userID)
 	if err := u.client.Delete(ctx, idKey); err != nil {
 		u.log.Error("Failed to delete user from cache by ID",
@@ -230,6 +225,9 @@ func (u *UserCache) DeleteUserByID(ctx context.Context, userID int64) error {
 			slog.String("error", err.Error()))
 		return fmt.Errorf("failed to delete user from cache by ID: %w", err)
 	}
+
+	duration := time.Since(start)
+	u.metrics.RecordCacheOperationDuration("delete", duration)
 
 	u.log.Debug("User deleted from cache by ID", slog.Int64("user_id", userID))
 	return nil
