@@ -50,12 +50,13 @@ func (r *Repository) Create(ctx context.Context, user *models.User) (*models.Use
 	query := `
         INSERT INTO users (username, password, email, full_name, bio, avatar_url, created_at, updated_at)
         VALUES (@username, @password, @email, @full_name, @bio, @avatar_url, @created_at, @updated_at)
-        RETURNING id, username, email, full_name, bio, avatar_url, created_at, updated_at`
+        RETURNING id, username, password, email, full_name, bio, avatar_url, created_at, updated_at`
 
 	var createdUser models.User
 	err := r.pool.QueryRow(ctx, query, args).Scan(
 		&createdUser.ID,
 		&createdUser.Username,
+		&createdUser.Password,
 		&createdUser.Email,
 		&createdUser.FullName,
 		&createdUser.Bio,
@@ -259,12 +260,13 @@ func (r *Repository) Update(ctx context.Context, user *models.User) (*models.Use
 	}
 
 	query += ` WHERE id = @id 
-        RETURNING id, username, email, full_name, bio, avatar_url, created_at, updated_at`
+        RETURNING id, username, password, email, full_name, bio, avatar_url, created_at, updated_at`
 
 	var updatedUser models.User
 	err := r.pool.QueryRow(ctx, query, args).Scan(
 		&updatedUser.ID,
 		&updatedUser.Username,
+		&updatedUser.Password,
 		&updatedUser.Email,
 		&updatedUser.FullName,
 		&updatedUser.Bio,
