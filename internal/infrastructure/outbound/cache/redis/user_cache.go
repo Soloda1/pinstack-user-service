@@ -47,6 +47,7 @@ func (u *UserCache) GetUserByID(ctx context.Context, userID int64) (*models.User
 
 	if err != nil {
 		if errors.Is(err, custom_errors.ErrCacheMiss) {
+			u.metrics.IncrementCacheMisses()
 			u.log.Debug("User cache miss", slog.Int64("user_id", userID))
 			return nil, custom_errors.ErrCacheMiss
 		}
@@ -56,6 +57,7 @@ func (u *UserCache) GetUserByID(ctx context.Context, userID int64) (*models.User
 		return nil, fmt.Errorf("failed to get user from cache: %w", err)
 	}
 
+	u.metrics.IncrementCacheHits()
 	u.log.Debug("User cache hit", slog.Int64("user_id", userID))
 	return &user, nil
 }
@@ -72,6 +74,7 @@ func (u *UserCache) GetUserByEmail(ctx context.Context, email string) (*models.U
 
 	if err != nil {
 		if errors.Is(err, custom_errors.ErrCacheMiss) {
+			u.metrics.IncrementCacheMisses()
 			u.log.Debug("User email cache miss", slog.String("email", email))
 			return nil, custom_errors.ErrCacheMiss
 		}
@@ -81,6 +84,7 @@ func (u *UserCache) GetUserByEmail(ctx context.Context, email string) (*models.U
 		return nil, fmt.Errorf("failed to get user by email from cache: %w", err)
 	}
 
+	u.metrics.IncrementCacheHits()
 	u.log.Debug("User email cache hit", slog.String("email", email))
 	return &user, nil
 }
@@ -97,6 +101,7 @@ func (u *UserCache) GetUserByUsername(ctx context.Context, username string) (*mo
 
 	if err != nil {
 		if errors.Is(err, custom_errors.ErrCacheMiss) {
+			u.metrics.IncrementCacheMisses()
 			u.log.Debug("User username cache miss", slog.String("username", username))
 			return nil, custom_errors.ErrCacheMiss
 		}
@@ -106,6 +111,7 @@ func (u *UserCache) GetUserByUsername(ctx context.Context, username string) (*mo
 		return nil, fmt.Errorf("failed to get user by username from cache: %w", err)
 	}
 
+	u.metrics.IncrementCacheHits()
 	u.log.Debug("User username cache hit", slog.String("username", username))
 	return &user, nil
 }
