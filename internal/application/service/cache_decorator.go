@@ -17,17 +17,20 @@ type UserServiceCacheDecorator struct {
 	service   input.UserService
 	userCache cache.UserCache
 	log       output.Logger
+	metrics   output.MetricsProvider
 }
 
 func NewUserServiceCacheDecorator(
 	service input.UserService,
 	userCache cache.UserCache,
 	log output.Logger,
+	metrics output.MetricsProvider,
 ) input.UserService {
 	return &UserServiceCacheDecorator{
 		service:   service,
 		userCache: userCache,
 		log:       log,
+		metrics:   metrics,
 	}
 }
 
@@ -56,6 +59,7 @@ func (d *UserServiceCacheDecorator) Get(ctx context.Context, id int64) (*models.
 	cachedUser, err := d.userCache.GetUserByID(ctx, id)
 	if err == nil {
 		d.log.Debug("User found in cache", slog.Int64("user_id", id))
+		d.metrics.IncrementCacheHits()
 		return cachedUser, nil
 	}
 
@@ -63,6 +67,8 @@ func (d *UserServiceCacheDecorator) Get(ctx context.Context, id int64) (*models.
 		d.log.Warn("Failed to get user from cache",
 			slog.Int64("user_id", id),
 			slog.String("error", err.Error()))
+	} else {
+		d.metrics.IncrementCacheMisses()
 	}
 
 	d.log.Debug("User cache miss, fetching from service", slog.Int64("user_id", id))
@@ -86,6 +92,7 @@ func (d *UserServiceCacheDecorator) GetByUsername(ctx context.Context, username 
 	cachedUser, err := d.userCache.GetUserByUsername(ctx, username)
 	if err == nil {
 		d.log.Debug("User found in cache by username", slog.String("username", username))
+		d.metrics.IncrementCacheHits()
 		return cachedUser, nil
 	}
 
@@ -93,6 +100,8 @@ func (d *UserServiceCacheDecorator) GetByUsername(ctx context.Context, username 
 		d.log.Warn("Failed to get user by username from cache",
 			slog.String("username", username),
 			slog.String("error", err.Error()))
+	} else {
+		d.metrics.IncrementCacheMisses()
 	}
 
 	d.log.Debug("User username cache miss, fetching from service", slog.String("username", username))
@@ -116,6 +125,7 @@ func (d *UserServiceCacheDecorator) GetByEmail(ctx context.Context, email string
 	cachedUser, err := d.userCache.GetUserByEmail(ctx, email)
 	if err == nil {
 		d.log.Debug("User found in cache by email", slog.String("email", email))
+		d.metrics.IncrementCacheHits()
 		return cachedUser, nil
 	}
 
@@ -123,6 +133,8 @@ func (d *UserServiceCacheDecorator) GetByEmail(ctx context.Context, email string
 		d.log.Warn("Failed to get user by email from cache",
 			slog.String("email", email),
 			slog.String("error", err.Error()))
+	} else {
+		d.metrics.IncrementCacheMisses()
 	}
 
 	d.log.Debug("User email cache miss, fetching from service", slog.String("email", email))
