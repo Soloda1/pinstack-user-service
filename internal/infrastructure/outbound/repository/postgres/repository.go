@@ -329,7 +329,7 @@ func (r *Repository) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	if result.RowsAffected() == 0 {
-		r.metrics.IncrementDatabaseQueries("delete", false)
+		r.metrics.IncrementDatabaseQueries("delete", true)
 		return custom_errors.ErrUserNotFound
 	}
 
