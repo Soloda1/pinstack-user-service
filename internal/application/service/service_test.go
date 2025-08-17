@@ -6,19 +6,21 @@ import (
 
 	"github.com/soloda1/pinstack-proto-definitions/custom_errors"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
 	"pinstack-user-service/internal/domain/models"
 	user_service "pinstack-user-service/internal/domain/ports/input"
 	"pinstack-user-service/internal/infrastructure/logger"
+	"pinstack-user-service/internal/infrastructure/outbound/metrics/prometheus"
 	"pinstack-user-service/mocks"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func setupTest(t *testing.T) (user_service.UserService, *mocks.UserRepository, func()) {
 	mockRepo := mocks.NewUserRepository(t)
 	log := logger.New("test")
-	service := NewUserService(mockRepo, log)
+	metrics := prometheus.NewPrometheusMetricsProvider()
+	service := NewUserService(mockRepo, log, metrics)
 	return service, mockRepo, func() {}
 }
 
