@@ -2,24 +2,23 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/signal"
 	user_service "pinstack-user-service/internal/application/service"
 	"pinstack-user-service/internal/infrastructure/config"
 	infra_grpc "pinstack-user-service/internal/infrastructure/inbound/grpc"
 	user_grpc "pinstack-user-service/internal/infrastructure/inbound/grpc/user"
+	metrics_server "pinstack-user-service/internal/infrastructure/inbound/metrics"
 	"pinstack-user-service/internal/infrastructure/logger"
 	redis_cache "pinstack-user-service/internal/infrastructure/outbound/cache/redis"
+	prometheus_metrics "pinstack-user-service/internal/infrastructure/outbound/metrics/prometheus"
 	user_repository "pinstack-user-service/internal/infrastructure/outbound/repository/postgres"
 	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -61,25 +60,26 @@ func main() {
 		}
 	}()
 
-	userCache := redis_cache.NewUserCache(redisClient, log)
+	metrics := prometheus_metrics.NewPrometheusMetricsProvider()
 
-	userRepo := user_repository.NewUserRepository(pool, log)
-	originalUserService := user_service.NewUserService(userRepo, log)
+	metrics.SetServiceHealth(true)
+
+	userCache := redis_cache.NewUserCache(redisClient, log, metrics)
+
+	userRepo := user_repository.NewUserRepository(pool, log, metrics)
+	originalUserService := user_service.NewUserService(userRepo, log, metrics)
 
 	userService := user_service.NewUserServiceCacheDecorator(
 		originalUserService,
 		userCache,
 		log,
+		metrics,
 	)
 
 	userGRPCApi := user_grpc.NewUserGRPCService(userService, log)
-	grpcServer := infra_grpc.NewServer(userGRPCApi, cfg.GRPCServer.Address, cfg.GRPCServer.Port, log)
+	grpcServer := infra_grpc.NewServer(userGRPCApi, cfg.GRPCServer.Address, cfg.GRPCServer.Port, log, metrics)
 
-	metricsAddr := fmt.Sprintf("%s:%d", cfg.Prometheus.Address, cfg.Prometheus.Port)
-	metricsServer := &http.Server{
-		Addr:    metricsAddr,
-		Handler: nil,
-	}
+	metricsServer := metrics_server.NewMetricsServer(cfg.Prometheus.Address, cfg.Prometheus.Port, log)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
@@ -93,17 +93,17 @@ func main() {
 		done <- true
 	}()
 
-	http.Handle("/metrics", promhttp.Handler())
 	go func() {
-		log.Info("Starting Prometheus metrics server", slog.String("address", metricsAddr))
-		if err := metricsServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Error("Prometheus metrics server error", slog.String("error", err.Error()))
+		if err := metricsServer.Run(); err != nil {
+			log.Error("Metrics server error", slog.String("error", err.Error()))
 		}
 		metricsDone <- true
 	}()
 
 	<-quit
 	log.Info("Shutting down servers...")
+
+	metrics.SetServiceHealth(false)
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
