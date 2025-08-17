@@ -13,12 +13,13 @@ import (
 )
 
 type Service struct {
-	repo output.UserRepository
-	log  output.Logger
+	repo    output.UserRepository
+	log     output.Logger
+	metrics output.MetricsProvider
 }
 
-func NewUserService(repo output.UserRepository, log output.Logger) input.UserService {
-	return &Service{repo: repo, log: log}
+func NewUserService(repo output.UserRepository, log output.Logger, metrics output.MetricsProvider) input.UserService {
+	return &Service{repo: repo, log: log, metrics: metrics}
 }
 
 func (s *Service) Create(ctx context.Context, user *models.User) (*models.User, error) {
@@ -28,6 +29,7 @@ func (s *Service) Create(ctx context.Context, user *models.User) (*models.User, 
 
 	createdUser, err := s.repo.Create(ctx, user)
 	if err != nil {
+		s.metrics.IncrementUserOperations("create", false)
 		switch {
 		case errors.Is(err, custom_errors.ErrUsernameExists):
 			s.log.Debug("Username already exists",
@@ -46,6 +48,7 @@ func (s *Service) Create(ctx context.Context, user *models.User) (*models.User, 
 		}
 	}
 
+	s.metrics.IncrementUserOperations("create", true)
 	s.log.Debug("User created successfully",
 		slog.Int64("id", createdUser.ID),
 		slog.String("username", createdUser.Username))
@@ -57,6 +60,7 @@ func (s *Service) Get(ctx context.Context, id int64) (*models.User, error) {
 
 	user, err := s.repo.GetByID(ctx, id)
 	if err != nil {
+		s.metrics.IncrementUserOperations("get", false)
 		switch {
 		case errors.Is(err, custom_errors.ErrUserNotFound):
 			s.log.Debug("User not found", slog.Int64("id", id))
@@ -69,6 +73,7 @@ func (s *Service) Get(ctx context.Context, id int64) (*models.User, error) {
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
+	s.metrics.IncrementUserOperations("get", true)
 	s.log.Debug("User retrieved successfully",
 		slog.Int64("id", user.ID),
 		slog.String("username", user.Username))
@@ -80,6 +85,7 @@ func (s *Service) GetByUsername(ctx context.Context, username string) (*models.U
 
 	user, err := s.repo.GetByUsername(ctx, username)
 	if err != nil {
+		s.metrics.IncrementUserOperations("get_by_username", false)
 		switch {
 		case errors.Is(err, custom_errors.ErrUserNotFound):
 			s.log.Debug("User not found", slog.String("username", username))
@@ -92,6 +98,7 @@ func (s *Service) GetByUsername(ctx context.Context, username string) (*models.U
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
+	s.metrics.IncrementUserOperations("get_by_username", true)
 	s.log.Debug("User retrieved by username successfully",
 		slog.Int64("id", user.ID),
 		slog.String("username", user.Username))
@@ -103,6 +110,7 @@ func (s *Service) GetByEmail(ctx context.Context, email string) (*models.User, e
 
 	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
+		s.metrics.IncrementUserOperations("get_by_email", false)
 		switch {
 		case errors.Is(err, custom_errors.ErrUserNotFound):
 			s.log.Debug("User not found", slog.String("email", email))
@@ -115,6 +123,7 @@ func (s *Service) GetByEmail(ctx context.Context, email string) (*models.User, e
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
+	s.metrics.IncrementUserOperations("get_by_email", true)
 	s.log.Debug("User retrieved by email successfully",
 		slog.Int64("id", user.ID),
 		slog.String("email", user.Email))
@@ -128,6 +137,7 @@ func (s *Service) Update(ctx context.Context, user *models.User) (*models.User, 
 
 	updatedUser, err := s.repo.Update(ctx, user)
 	if err != nil {
+		s.metrics.IncrementUserOperations("update", false)
 		switch {
 		case errors.Is(err, custom_errors.ErrUsernameExists):
 			s.log.Debug("Username already exists", slog.String("username", user.Username))
@@ -146,6 +156,7 @@ func (s *Service) Update(ctx context.Context, user *models.User) (*models.User, 
 			return nil, custom_errors.ErrDatabaseQuery
 		}
 	}
+	s.metrics.IncrementUserOperations("update", true)
 	s.log.Debug("User updated successfully",
 		slog.Int64("id", updatedUser.ID),
 		slog.String("username", updatedUser.Username))
@@ -157,6 +168,7 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 
 	err := s.repo.Delete(ctx, id)
 	if err != nil {
+		s.metrics.IncrementUserOperations("delete", false)
 		switch {
 		case errors.Is(err, custom_errors.ErrUserNotFound):
 			s.log.Debug("User not found", slog.Int64("id", id))
@@ -169,6 +181,7 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 			return custom_errors.ErrDatabaseQuery
 		}
 	}
+	s.metrics.IncrementUserOperations("delete", true)
 	s.log.Debug("User deleted successfully", slog.Int64("id", id))
 	return nil
 }
@@ -182,6 +195,7 @@ func (s *Service) Search(ctx context.Context, query string, page, limit int) ([]
 	offset := (page - 1) * limit
 	users, count, err := s.repo.Search(ctx, query, offset, limit)
 	if err != nil {
+		s.metrics.IncrementUserOperations("search", false)
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
 			s.log.Debug("No users found for search query",
@@ -198,6 +212,7 @@ func (s *Service) Search(ctx context.Context, query string, page, limit int) ([]
 			return nil, 0, custom_errors.ErrDatabaseQuery
 		}
 	}
+	s.metrics.IncrementUserOperations("search", true)
 	s.log.Debug("Search completed successfully",
 		slog.String("query", query),
 		slog.Int("count", count))
@@ -209,6 +224,7 @@ func (s *Service) UpdatePassword(ctx context.Context, id int64, oldPassword, new
 
 	_, err := s.repo.GetByID(ctx, id)
 	if err != nil {
+		s.metrics.IncrementUserOperations("update_password", false)
 		switch {
 		case errors.Is(err, custom_errors.ErrUserNotFound):
 			s.log.Debug("User not found", slog.Int64("id", id))
@@ -223,11 +239,13 @@ func (s *Service) UpdatePassword(ctx context.Context, id int64, oldPassword, new
 
 	err = s.repo.UpdatePassword(ctx, id, newPassword)
 	if err != nil {
+		s.metrics.IncrementUserOperations("update_password", false)
 		s.log.Error("Failed update user",
 			slog.String("error", err.Error()),
 			slog.Int64("id", id))
 		return custom_errors.ErrDatabaseQuery
 	}
+	s.metrics.IncrementUserOperations("update_password", true)
 	s.log.Debug("User password updated successfully", slog.Int64("id", id))
 	return nil
 }
@@ -239,6 +257,7 @@ func (s *Service) UpdateAvatar(ctx context.Context, id int64, avatarURL string) 
 
 	err := s.repo.UpdateAvatar(ctx, id, avatarURL)
 	if err != nil {
+		s.metrics.IncrementUserOperations("update_avatar", false)
 		switch {
 		case errors.Is(err, custom_errors.ErrUserNotFound):
 			s.log.Debug("User not found", slog.Int64("id", id))
@@ -252,6 +271,7 @@ func (s *Service) UpdateAvatar(ctx context.Context, id int64, avatarURL string) 
 		}
 	}
 
+	s.metrics.IncrementUserOperations("update_avatar", true)
 	s.log.Debug("User avatar updated successfully", slog.Int64("id", id))
 	return nil
 }

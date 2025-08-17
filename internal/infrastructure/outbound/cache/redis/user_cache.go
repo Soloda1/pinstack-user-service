@@ -22,24 +22,32 @@ const (
 )
 
 type UserCache struct {
-	client *Client
-	log    ports.Logger
+	client  *Client
+	log     ports.Logger
+	metrics ports.MetricsProvider
 }
 
-func NewUserCache(client *Client, log ports.Logger) *UserCache {
+func NewUserCache(client *Client, log ports.Logger, metrics ports.MetricsProvider) *UserCache {
 	return &UserCache{
-		client: client,
-		log:    log,
+		client:  client,
+		log:     log,
+		metrics: metrics,
 	}
 }
 
 func (u *UserCache) GetUserByID(ctx context.Context, userID int64) (*models.User, error) {
+	start := time.Now()
 	key := u.getUserKey(userID)
 
 	var user models.User
 	err := u.client.Get(ctx, key, &user)
+
+	duration := time.Since(start)
+	u.metrics.RecordCacheOperationDuration("get", duration)
+
 	if err != nil {
 		if errors.Is(err, custom_errors.ErrCacheMiss) {
+			u.metrics.IncrementCacheMisses()
 			u.log.Debug("User cache miss", slog.Int64("user_id", userID))
 			return nil, custom_errors.ErrCacheMiss
 		}
@@ -49,17 +57,24 @@ func (u *UserCache) GetUserByID(ctx context.Context, userID int64) (*models.User
 		return nil, fmt.Errorf("failed to get user from cache: %w", err)
 	}
 
+	u.metrics.IncrementCacheHits()
 	u.log.Debug("User cache hit", slog.Int64("user_id", userID))
 	return &user, nil
 }
 
 func (u *UserCache) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	start := time.Now()
 	key := u.getUserEmailKey(email)
 
 	var user models.User
 	err := u.client.Get(ctx, key, &user)
+
+	duration := time.Since(start)
+	u.metrics.RecordCacheOperationDuration("get", duration)
+
 	if err != nil {
 		if errors.Is(err, custom_errors.ErrCacheMiss) {
+			u.metrics.IncrementCacheMisses()
 			u.log.Debug("User email cache miss", slog.String("email", email))
 			return nil, custom_errors.ErrCacheMiss
 		}
@@ -69,17 +84,24 @@ func (u *UserCache) GetUserByEmail(ctx context.Context, email string) (*models.U
 		return nil, fmt.Errorf("failed to get user by email from cache: %w", err)
 	}
 
+	u.metrics.IncrementCacheHits()
 	u.log.Debug("User email cache hit", slog.String("email", email))
 	return &user, nil
 }
 
 func (u *UserCache) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	start := time.Now()
 	key := u.getUserUsernameKey(username)
 
 	var user models.User
 	err := u.client.Get(ctx, key, &user)
+
+	duration := time.Since(start)
+	u.metrics.RecordCacheOperationDuration("get", duration)
+
 	if err != nil {
 		if errors.Is(err, custom_errors.ErrCacheMiss) {
+			u.metrics.IncrementCacheMisses()
 			u.log.Debug("User username cache miss", slog.String("username", username))
 			return nil, custom_errors.ErrCacheMiss
 		}
@@ -89,11 +111,18 @@ func (u *UserCache) GetUserByUsername(ctx context.Context, username string) (*mo
 		return nil, fmt.Errorf("failed to get user by username from cache: %w", err)
 	}
 
+	u.metrics.IncrementCacheHits()
 	u.log.Debug("User username cache hit", slog.String("username", username))
 	return &user, nil
 }
 
 func (u *UserCache) SetUser(ctx context.Context, user *models.User) error {
+	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		u.metrics.RecordCacheOperationDuration("set", duration)
+	}()
+
 	if user == nil {
 		return fmt.Errorf("user cannot be nil")
 	}
@@ -131,6 +160,12 @@ func (u *UserCache) SetUser(ctx context.Context, user *models.User) error {
 }
 
 func (u *UserCache) DeleteUser(ctx context.Context, user *models.User) error {
+	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		u.metrics.RecordCacheOperationDuration("delete", duration)
+	}()
+
 	if user == nil {
 		return fmt.Errorf("user cannot be nil")
 	}
@@ -167,6 +202,7 @@ func (u *UserCache) DeleteUser(ctx context.Context, user *models.User) error {
 }
 
 func (u *UserCache) DeleteUserByID(ctx context.Context, userID int64) error {
+	start := time.Now()
 	user, err := u.GetUserByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, custom_errors.ErrCacheMiss) {
@@ -179,7 +215,6 @@ func (u *UserCache) DeleteUserByID(ctx context.Context, userID int64) error {
 	}
 
 	if user != nil {
-		// Если получили пользователя, удаляем все связанные ключи
 		return u.DeleteUser(ctx, user)
 	}
 
@@ -190,6 +225,9 @@ func (u *UserCache) DeleteUserByID(ctx context.Context, userID int64) error {
 			slog.String("error", err.Error()))
 		return fmt.Errorf("failed to delete user from cache by ID: %w", err)
 	}
+
+	duration := time.Since(start)
+	u.metrics.RecordCacheOperationDuration("delete", duration)
 
 	u.log.Debug("User deleted from cache by ID", slog.Int64("user_id", userID))
 	return nil
