@@ -240,10 +240,6 @@ start-monitoring: setup-monitoring
 	@docker network create pinstack-test 2>/dev/null || true
 	cd $(MONITORING_DIR) && \
 	docker compose up -d
-	@echo "🔗 Подключение monitoring к тестовым сетям..."
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-prometheus 2>/dev/null || true
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-grafana 2>/dev/null || true
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-loki 2>/dev/null || true
 	@echo "⏳ Ожидание готовности monitoring сервисов..."
 	@sleep 15
 	@echo "✅ Monitoring stack запущен:"
@@ -263,10 +259,6 @@ start-prometheus-stack: setup-monitoring
 	@docker network create pinstack-test 2>/dev/null || true
 	cd $(MONITORING_DIR) && \
 	docker compose up -d prometheus grafana loki promtail
-	@echo "🔗 Подключение Prometheus stack к тестовым сетям..."
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-prometheus 2>/dev/null || true
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-grafana 2>/dev/null || true
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-loki 2>/dev/null || true
 	@echo "⏳ Ожидание готовности Prometheus stack..."
 	@sleep 10
 	@echo "✅ Prometheus stack запущен:"
@@ -359,11 +351,7 @@ logs-kibana:
 
 # Полный development environment с мониторингом
 start-dev-full: setup-monitoring start-monitoring start-user-infrastructure
-	@echo "� Дополнительное подключение monitoring к тестовым сетям..."
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-prometheus 2>/dev/null || true
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-grafana 2>/dev/null || true
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-loki 2>/dev/null || true
-	@echo "�🚀 Полная dev среда запущена!"
+	@echo "🚀 Полная dev среда запущена!"
 	@echo ""
 	@echo "=== Приложения ==="
 	@echo "  🔗 API Gateway: http://localhost:8080"
@@ -391,11 +379,7 @@ clean-dev-full: clean-monitoring clean-user-infrastructure
 
 # Запуск только с Prometheus stack (без ELK)
 start-dev-light: setup-monitoring start-prometheus-stack start-user-infrastructure
-	@echo "� Дополнительное подключение Prometheus stack к тестовым сетям..."
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-prometheus 2>/dev/null || true
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-grafana 2>/dev/null || true
-	@docker network connect pinstack-system-tests_pinstack-test pinstack-loki 2>/dev/null || true
-	@echo "�🚀 Легкая dev среда запущена (без ELK stack)!"
+	@echo "🚀 Легкая dev среда запущена (без ELK stack)!"
 	@echo ""
 	@echo "=== Приложения ==="
 	@echo "  🔗 API Gateway"
