@@ -11,6 +11,7 @@ type Config struct {
 	Env        string
 	GRPCServer GRPCServer
 	Database   Database
+	Redis      Redis
 	Prometheus Prometheus
 }
 
@@ -26,6 +27,14 @@ type Database struct {
 	Port           string
 	DbName         string
 	MigrationsPath string
+}
+
+type Redis struct {
+	Address  string
+	Port     int
+	Password string
+	DB       int
+	PoolSize int
 }
 
 type Prometheus struct {
@@ -50,6 +59,12 @@ func MustLoad() *Config {
 	viper.SetDefault("database.db_name", "userservice")
 	viper.SetDefault("database.migrations_path", "migrations")
 
+	viper.SetDefault("redis.address", "redis")
+	viper.SetDefault("redis.port", 6379)
+	viper.SetDefault("redis.password", "")
+	viper.SetDefault("redis.db", 6)
+	viper.SetDefault("redis.pool_size", 10)
+
 	viper.SetDefault("prometheus.address", "0.0.0.0")
 	viper.SetDefault("prometheus.port", 9101)
 
@@ -71,6 +86,13 @@ func MustLoad() *Config {
 			Port:           viper.GetString("database.port"),
 			DbName:         viper.GetString("database.db_name"),
 			MigrationsPath: viper.GetString("database.migrations_path"),
+		},
+		Redis: Redis{
+			Address:  viper.GetString("redis.address"),
+			Port:     viper.GetInt("redis.port"),
+			Password: viper.GetString("redis.password"),
+			DB:       viper.GetInt("redis.db"),
+			PoolSize: viper.GetInt("redis.pool_size"),
 		},
 		Prometheus: Prometheus{
 			Address: viper.GetString("prometheus.address"),
