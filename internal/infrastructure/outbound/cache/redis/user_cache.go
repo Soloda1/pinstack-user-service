@@ -112,14 +112,17 @@ func (u *UserCache) GetUserByUsername(ctx context.Context, username string) (*mo
 
 func (u *UserCache) SetUser(ctx context.Context, user *models.User) error {
 	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		u.metrics.RecordCacheOperationDuration("set", duration)
+	}()
+
 	if user == nil {
 		return fmt.Errorf("user cannot be nil")
 	}
 
 	idKey := u.getUserKey(user.ID)
 	if err := u.client.Set(ctx, idKey, user, userCacheTTL); err != nil {
-		duration := time.Since(start)
-		u.metrics.RecordCacheOperationDuration("set", duration)
 		u.log.Error("Failed to set user cache by ID",
 			slog.Int64("user_id", user.ID),
 			slog.String("error", err.Error()))
@@ -128,8 +131,6 @@ func (u *UserCache) SetUser(ctx context.Context, user *models.User) error {
 
 	emailKey := u.getUserEmailKey(user.Email)
 	if err := u.client.Set(ctx, emailKey, user, userCacheTTL); err != nil {
-		duration := time.Since(start)
-		u.metrics.RecordCacheOperationDuration("set", duration)
 		u.log.Error("Failed to set user cache by email",
 			slog.String("email", user.Email),
 			slog.String("error", err.Error()))
@@ -138,16 +139,12 @@ func (u *UserCache) SetUser(ctx context.Context, user *models.User) error {
 
 	usernameKey := u.getUserUsernameKey(user.Username)
 	if err := u.client.Set(ctx, usernameKey, user, userCacheTTL); err != nil {
-		duration := time.Since(start)
-		u.metrics.RecordCacheOperationDuration("set", duration)
 		u.log.Error("Failed to set user cache by username",
 			slog.String("username", user.Username),
 			slog.String("error", err.Error()))
 		return fmt.Errorf("failed to set user cache by username: %w", err)
 	}
 
-	duration := time.Since(start)
-	u.metrics.RecordCacheOperationDuration("set", duration)
 	u.log.Debug("User cached successfully",
 		slog.Int64("user_id", user.ID),
 		slog.String("username", user.Username),
@@ -157,6 +154,12 @@ func (u *UserCache) SetUser(ctx context.Context, user *models.User) error {
 }
 
 func (u *UserCache) DeleteUser(ctx context.Context, user *models.User) error {
+	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		u.metrics.RecordCacheOperationDuration("delete", duration)
+	}()
+
 	if user == nil {
 		return fmt.Errorf("user cannot be nil")
 	}
@@ -207,6 +210,12 @@ func (u *UserCache) DeleteUserByID(ctx context.Context, userID int64) error {
 	if user != nil {
 		return u.DeleteUser(ctx, user)
 	}
+
+	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		u.metrics.RecordCacheOperationDuration("delete", duration)
+	}()
 
 	idKey := u.getUserKey(userID)
 	if err := u.client.Delete(ctx, idKey); err != nil {
